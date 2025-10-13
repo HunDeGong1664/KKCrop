@@ -45,14 +45,14 @@ KKCrop is a professional image splitting tool developed based on Electron, which
 
 ### 预构建版本 / Pre-built Version
 
-1. 前往 [Releases](https://github.com/yourusername/kkcrop/releases) 页面下载对应系统的安装包
+1. 前往 [Releases](https://github.com/HunDeGong/kkcrop/releases) 页面下载对应系统的安装包
 2. 按照安装向导完成安装
 
 ### 从源码构建 / Build from Source
 
 ```bash
 # 克隆仓库
-git clone https://github.com/yourusername/kkcrop.git
+git clone https://github.com/HunDeGong/kkcrop.git
 cd kkcrop
 
 # 安装依赖
