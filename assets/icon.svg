@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <rect width="256" height="256" fill="#f0f0f0"/>
+  
+  <!-- 主图标 - 剪刀形状 -->
+  <g transform="translate(128, 128) scale(0.8)">
+    <!-- 左侧剪刀 -->
+    <path d="M-50,-30 L-20,10 L-20,50 L-50,70 L-70,40 Z" fill="#4CAF50" stroke="#388E3C" stroke-width="5"/>
+    <!-- 右侧剪刀 -->
+    <path d="M50,-30 L20,10 L20,50 L50,70 L70,40 Z" fill="#4CAF50" stroke="#388E3C" stroke-width="5"/>
+    <!-- 中间连接轴 -->
+    <circle cx="0" cy="0" r="10" fill="#388E3C" stroke="#2E7D32" stroke-width="3"/>
+    
+    <!-- 图片分割线 -->
+    <g stroke="#FF5722" stroke-width="3" stroke-dasharray="5,5">
+      <line x1="-80" y1="-80" x2="80" y2="80"/>
+      <line x1="-80" y1="80" x2="80" y2="-80"/>
+    </g>
+    
+    <!-- 装饰性边框 -->
+    <rect x="-100" y="-100" width="200" height="200" fill="none" stroke="#388E3C" stroke-width="5" rx="10" ry="10"/>
+  </g>
+  
+  <!-- 文字标识 - KKCrop -->
+  <text x="128" y="210" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#2E7D32" text-anchor="middle">KKCrop</text>
+</svg>

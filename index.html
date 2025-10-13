@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 添加内容安全策略 (CSP) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:5173; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:5173; img-src 'self' data: file:;">
+  <title>KKCrop图片等比分割工具</title>
+  <!-- 引入本地Font Awesome -->
+  <link href="node_modules/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+  <!-- 引入Tailwind CSS样式 -->
+  <link href="src/index.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-dark min-h-screen flex flex-col">
+  <!-- 顶部导航栏 -->
+  <header class="bg-white shadow-md py-4 px-6">
+    <div class="container mx-auto flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fa fa-crop text-primary text-2xl"></i>
+        <h1 class="text-xl font-bold text-primary">KKCrop图片等比分割工具</h1>
+      </div>
+      <div class="text-gray-500 text-sm">
+        <span id="app-version">v1.0.0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="flex-grow container mx-auto p-6">
+    <!-- 步骤指示器 -->
+    <div class="flex justify-between items-center mb-8 max-w-3xl mx-auto">
+      <div class="flex flex-col items-center" id="step-1-indicator">
+        <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center mb-2">
+          <i class="fa fa-image"></i>
+        </div>
+        <span class="text-sm font-medium text-primary">选择图片</span>
+      </div>
+      <div class="flex-1 h-1 mx-2 bg-gray-200">
+        <div class="h-full bg-primary transition-all duration-500" id="progress-1-2" style="width: 0%"></div>
+      </div>
+      <div class="flex flex-col items-center" id="step-2-indicator">
+        <div class="w-10 h-10 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center mb-2">
+          <i class="fa fa-sliders"></i>
+        </div>
+        <span class="text-sm font-medium text-gray-500">设置分割</span>
+      </div>
+      <div class="flex-1 h-1 mx-2 bg-gray-200">
+        <div class="h-full bg-primary transition-all duration-500" id="progress-2-3" style="width: 0%"></div>
+      </div>
+      <div class="flex flex-col items-center" id="step-3-indicator">
+        <div class="w-10 h-10 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center mb-2">
+          <i class="fa fa-th-large"></i>
+        </div>
+        <span class="text-sm font-medium text-gray-500">预览保存</span>
+      </div>
+    </div>
+
+    <!-- 步骤内容区 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- 左侧控制面板 -->
+      <div class="lg:col-span-1">
+        <div class="bg-white rounded-xl shadow-lg p-6 h-full">
+          <!-- 步骤1：选择图片 -->
+          <div id="step-1" class="space-y-6">
+            <h2 class="text-lg font-semibold border-b pb-2">选择图片</h2>
+            
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary transition-custom cursor-pointer" id="select-image-area">
+              <i class="fa fa-upload text-4xl text-gray-400 mb-3"></i>
+              <p class="text-gray-500">点击或拖拽图片到此处</p>
+              <p class="text-xs text-gray-400 mt-2">支持 JPG, PNG, GIF, BMP 格式</p>
+            </div>
+            
+            <div id="selected-image-info" class="hidden">
+              <div class="bg-gray-50 p-3 rounded-lg text-sm">
+                <p class="truncate" id="image-path"></p>
+                <p class="text-gray-500 mt-1" id="image-dimensions"></p>
+              </div>
+              <button id="change-image-btn" class="mt-2 text-sm text-primary hover:text-primary/80 transition-custom">
+                <i class="fa fa-refresh mr-1"></i> 更换图片
+              </button>
+            </div>
+            
+            <button id="to-step-2-btn" class="w-full bg-primary hover:bg-primary/90 text-white py-3 rounded-lg font-medium transition-custom flex items-center justify-center opacity-50 cursor-not-allowed" disabled>
+              <span>下一步</span>
+              <i class="fa fa-arrow-right ml-2"></i>
+            </button>
+          </div>
+          
+          <!-- 步骤2：设置分割参数 -->
+          <div id="step-2" class="space-y-6 hidden">
+            <h2 class="text-lg font-semibold border-b pb-2">设置分割参数</h2>
+            
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">横向分割 (X)</label>
+                <div class="flex items-center">
+                  <button id="decrease-x" class="bg-gray-100 hover:bg-gray-200 w-10 h-10 rounded-l-lg flex items-center justify-center transition-custom">
+                    <i class="fa fa-minus"></i>
+                  </button>
+                  <input type="number" id="split-x" min="1" max="20" value="2" 
+                    class="w-full h-10 border-y border-gray-300 text-center focus:outline-none focus:border-primary">
+                  <button id="increase-x" class="bg-gray-100 hover:bg-gray-200 w-10 h-10 rounded-r-lg flex items-center justify-center transition-custom">
+                    <i class="fa fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">纵向分割 (Y)</label>
+                <div class="flex items-center">
+                  <button id="decrease-y" class="bg-gray-100 hover:bg-gray-200 w-10 h-10 rounded-l-lg flex items-center justify-center transition-custom">
+                    <i class="fa fa-minus"></i>
+                  </button>
+                  <input type="number" id="split-y" min="1" max="20" value="2" 
+                    class="w-full h-10 border-y border-gray-300 text-center focus:outline-none focus:border-primary">
+                  <button id="increase-y" class="bg-gray-100 hover:bg-gray-200 w-10 h-10 rounded-r-lg flex items-center justify-center transition-custom">
+                    <i class="fa fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="p-3 bg-blue-50 rounded-lg text-sm text-blue-700 flex items-start">
+                <i class="fa fa-info-circle mt-0.5 mr-2"></i>
+                <p>图片将被等分为 <span id="split-count">4</span> 份 (横向 <span id="split-x-display">2</span> 份 × 纵向 <span id="split-y-display">2</span> 份)</p>
+              </div>
+            </div>
+            
+            <div class="flex space-x-3 pt-2">
+              <button id="back-to-step-1-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg font-medium transition-custom">
+                <i class="fa fa-arrow-left mr-2"></i>
+                <span>上一步</span>
+              </button>
+              <button id="split-image-btn" class="flex-1 bg-secondary hover:bg-secondary/90 text-white py-3 rounded-lg font-medium transition-custom flex items-center justify-center">
+                <i class="fa fa-scissors mr-2"></i>
+                <span>裁剪图片</span>
+              </button>
+            </div>
+            
+            <!-- 加载指示器 -->
+            <div id="split-loading" class="hidden py-4 text-center">
+              <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+              <p class="mt-2 text-gray-600">正在裁剪图片...</p>
+            </div>
+          </div>
+          
+          <!-- 步骤3：保存选项 -->
+          <div id="step-3" class="space-y-6 hidden">
+            <h2 class="text-lg font-semibold border-b pb-2">保存选项</h2>
+            
+            <div class="space-y-4">
+              <div class="p-3 bg-green-50 rounded-lg text-sm text-green-700 flex items-start">
+                <i class="fa fa-check-circle mt-0.5 mr-2"></i>
+                <p>图片已成功分割为 <span id="result-count">4</span> 份</p>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-3">
+                <button id="save-as-files-btn" class="flex items-center justify-center bg-primary hover:bg-primary/90 text-white py-3 rounded-lg font-medium transition-custom">
+                  <i class="fa fa-file-image-o mr-2"></i>
+                  <span>保存为图片</span>
+                </button>
+                <button id="save-as-pdf-btn" class="flex items-center justify-center bg-accent hover:bg-accent/90 text-white py-3 rounded-lg font-medium transition-custom">
+                  <i class="fa fa-file-pdf-o mr-2"></i>
+                  <span>保存为PDF</span>
+                </button>
+              </div>
+              
+              <button id="split-another-btn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg font-medium transition-custom text-sm">
+                <i class="fa fa-refresh mr-1"></i> 分割另一张图片
+              </button>
+            </div>
+            
+            <div class="flex space-x-3 pt-2">
+              <button id="back-to-step-2-btn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg font-medium transition-custom">
+                <i class="fa fa-arrow-left mr-2"></i>
+                <span>返回修改</span>
+              </button>
+            </div>
+            
+            <!-- 保存状态提示 -->
+            <div id="save-success" class="hidden p-3 bg-green-50 rounded-lg text-sm text-green-700">
+              <i class="fa fa-check-circle mr-1"></i>
+              <span id="save-success-message"></span>
+            </div>
+            <div id="save-error" class="hidden p-3 bg-red-50 rounded-lg text-sm text-red-700">
+              <i class="fa fa-exclamation-circle mr-1"></i>
+              <span id="save-error-message"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 右侧预览区 -->
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-xl shadow-lg p-6 h-full">
+          <h2 class="text-lg font-semibold border-b pb-2 mb-4">预览</h2>
+          
+          <!-- 初始状态 -->
+          <div id="preview-initial" class="flex flex-col items-center justify-center h-[500px] text-gray-400">
+            <i class="fa fa-picture-o text-6xl mb-4"></i>
+            <p>请选择一张图片进行分割</p>
+          </div>
+          
+          <!-- 原图预览 -->
+          <div id="original-preview" class="hidden">
+            <p class="text-sm text-gray-500 mb-2">原始图片:</p>
+            <div class="border border-gray-200 rounded-lg overflow-hidden mb-6 bg-gray-50 flex justify-center p-4">
+              <img id="original-image" src="" alt="原始图片" class="max-w-full max-h-[300px] object-contain">
+            </div>
+            <div id="split-preview-section" class="hidden">
+              <p class="text-sm text-gray-500 mb-2">分割预览:</p>
+              <div class="border border-gray-200 rounded-lg overflow-hidden bg-gray-50 p-4">
+                <div id="split-preview-container" class="relative">
+                  <img id="split-preview-image" src="" alt="分割预览" class="max-w-full max-h-[300px] object-contain">
+                  <div id="split-overlay" class="absolute top-0 left-0 w-full h-full pointer-events-none"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 分割结果预览 -->
+          <div id="result-preview" class="hidden">
+            <p class="text-sm text-gray-500 mb-2">分割结果:</p>
+            <div id="pieces-container" class="grid gap-4 overflow-y-auto max-h-[500px] p-2">
+              <!-- 分割后的图片将在这里动态生成 -->
+            </div>
+          </div>
+          
+          <!-- 加载状态 -->
+          <div id="preview-loading" class="hidden flex flex-col items-center justify-center h-[500px]">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            <p class="mt-4 text-gray-600">正在加载图片...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="bg-white border-t mt-8 py-4 px-6">
+    <div class="container mx-auto text-center text-gray-500 text-sm">
+      <p>KKCrop图片等比分割工具 by 昏德公 &copy; 2025</p>
+    </div>
+  </footer>
+
+  <!-- 主脚本 -->
+  <script>
+    // 全局变量
+    let selectedImagePath = null;
+    let originalImageDimensions = { width: 0, height: 0 };
+    let splitPieces = [];
+    
+    // DOM元素
+    const elements = {
+      // 步骤指示器
+      step1Indicator: document.getElementById('step-1-indicator'),
+      step2Indicator: document.getElementById('step-2-indicator'),
+      step3Indicator: document.getElementById('step-3-indicator'),
+      progress12: document.getElementById('progress-1-2'),
+      progress23: document.getElementById('progress-2-3'),
+      
+      // 步骤内容
+      step1: document.getElementById('step-1'),
+      step2: document.getElementById('step-2'),
+      step3: document.getElementById('step-3'),
+      
+      // 步骤1元素
+      selectImageArea: document.getElementById('select-image-area'),
+      selectedImageInfo: document.getElementById('selected-image-info'),
+      imagePath: document.getElementById('image-path'),
+      imageDimensions: document.getElementById('image-dimensions'),
+      changeImageBtn: document.getElementById('change-image-btn'),
+      toStep2Btn: document.getElementById('to-step-2-btn'),
+      
+      // 步骤2元素
+      splitX: document.getElementById('split-x'),
+      splitY: document.getElementById('split-y'),
+      decreaseX: document.getElementById('decrease-x'),
+      increaseX: document.getElementById('increase-x'),
+      decreaseY: document.getElementById('decrease-y'),
+      increaseY: document.getElementById('increase-y'),
+      splitCount: document.getElementById('split-count'),
+      splitXDisplay: document.getElementById('split-x-display'),
+      splitYDisplay: document.getElementById('split-y-display'),
+      backToStep1Btn: document.getElementById('back-to-step-1-btn'),
+      splitImageBtn: document.getElementById('split-image-btn'),
+      splitLoading: document.getElementById('split-loading'),
+      
+      // 步骤3元素
+      resultCount: document.getElementById('result-count'),
+      saveAsFilesBtn: document.getElementById('save-as-files-btn'),
+      saveAsPdfBtn: document.getElementById('save-as-pdf-btn'),
+      splitAnotherBtn: document.getElementById('split-another-btn'),
+      backToStep2Btn: document.getElementById('back-to-step-2-btn'),
+      saveSuccess: document.getElementById('save-success'),
+      saveSuccessMessage: document.getElementById('save-success-message'),
+      saveError: document.getElementById('save-error'),
+      saveErrorMessage: document.getElementById('save-error-message'),
+      
+      // 预览区元素
+      previewInitial: document.getElementById('preview-initial'),
+      originalPreview: document.getElementById('original-preview'),
+      originalImage: document.getElementById('original-image'),
+      splitPreviewImage: document.getElementById('split-preview-image'),
+      splitOverlay: document.getElementById('split-overlay'),
+      splitPreviewSection: document.getElementById('split-preview-section'),
+      resultPreview: document.getElementById('result-preview'),
+      piecesContainer: document.getElementById('pieces-container'),
+      previewLoading: document.getElementById('preview-loading')
+    };
+    
+    // 更新分割计数显示
+    function updateSplitCount() {
+      const x = parseInt(elements.splitX.value);
+      const y = parseInt(elements.splitY.value);
+      elements.splitCount.textContent = x * y;
+      elements.splitXDisplay.textContent = x;
+      elements.splitYDisplay.textContent = y;
+      
+      // 如果已经选择了图片，更新分割预览
+      if (selectedImagePath) {
+        updateSplitPreview();
+      }
+    }
+    
+    // 更新分割预览网格
+    function updateSplitPreview() {
+      const x = parseInt(elements.splitX.value); // 横向分割数（添加横线）
+      const y = parseInt(elements.splitY.value); // 纵向分割数（添加竖线）
+      const { width, height } = originalImageDimensions;
+      
+      // 清空之前的网格
+      elements.splitOverlay.innerHTML = '';
+      
+      // 创建网格线
+      // 横线（水平分割线） - 由横向分割数决定
+      for (let i = 1; i < x; i++) {
+        const line = document.createElement('div');
+        line.style.position = 'absolute';
+        line.style.width = '100%';
+        line.style.height = '1px';
+        line.style.backgroundColor = 'rgba(255, 0, 0, 0.5)';
+        line.style.top = `${(i / x) * 100}%`;
+        elements.splitOverlay.appendChild(line);
+      }
+      
+      // 竖线（垂直分割线） - 由纵向分割数决定
+      for (let i = 1; i < y; i++) {
+        const line = document.createElement('div');
+        line.style.position = 'absolute';
+        line.style.width = '1px';
+        line.style.height = '100%';
+        line.style.backgroundColor = 'rgba(255, 0, 0, 0.5)';
+        line.style.left = `${(i / y) * 100}%`;
+        elements.splitOverlay.appendChild(line);
+      }
+    }
+    
+    // 选择图片
+    async function selectImage() {
+      elements.previewInitial.classList.add('hidden');
+      elements.previewLoading.classList.remove('hidden');
+      
+      try {
+        const imagePath = await window.electronAPI.selectImage();
+        if (imagePath) {
+          selectedImagePath = imagePath;
+          
+          // 显示图片信息
+          elements.imagePath.textContent = imagePath;
+          elements.selectedImageInfo.classList.remove('hidden');
+          
+          // 加载图片获取尺寸 - 使用encodeURI处理中文路径
+          const img = new Image();
+          img.src = `file://${encodeURI(imagePath)}`;
+          
+          img.onload = function() {
+            originalImageDimensions = { width: img.width, height: img.height };
+            elements.imageDimensions.textContent = `${img.width} × ${img.height} 像素`;
+            
+            // 显示图片预览
+            elements.originalImage.src = img.src;
+            elements.splitPreviewImage.src = img.src;
+            elements.previewLoading.classList.add('hidden');
+            elements.originalPreview.classList.remove('hidden');
+            
+            // 启用下一步按钮
+            elements.toStep2Btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            elements.toStep2Btn.disabled = false;
+            
+            // 隐藏分割预览部分
+            elements.splitPreviewSection.classList.add('hidden');
+            
+            // 不再立即更新分割预览
+            // updateSplitPreview();
+          };
+        } else {
+          elements.previewLoading.classList.add('hidden');
+          elements.previewInitial.classList.remove('hidden');
+        }
+      } catch (error) {
+        console.error('选择图片出错:', error);
+        elements.previewLoading.classList.add('hidden');
+        elements.previewInitial.classList.remove('hidden');
+      }
+    }
+    
+    // 分割图片
+    async function splitImage() {
+      const x = parseInt(elements.splitX.value);
+      const y = parseInt(elements.splitY.value);
+      
+      if (!selectedImagePath) return;
+      
+      // 显示加载状态
+      elements.splitImageBtn.disabled = true;
+      elements.splitImageBtn.classList.add('opacity-70');
+      elements.splitLoading.classList.remove('hidden');
+      
+      try {
+        // 调整行列参数以匹配预览逻辑
+        // x是横向分割数（添加横线，决定行数）
+        // y是纵向分割数（添加竖线，决定列数）
+        const result = await window.electronAPI.splitImage({
+          imagePath: selectedImagePath,
+          rows: x, // 行数由横向分割数决定
+          cols: y  // 列数由纵向分割数决定
+        });
+        
+        console.log('分割结果:', result);
+
+        if (result.success) {
+          splitPieces = result.pieces;
+          
+          // 更新结果计数
+          elements.resultCount.textContent = x * y;
+          
+          // 显示分割结果
+          elements.piecesContainer.innerHTML = '';
+          
+          // 根据实际列数设置网格
+          elements.piecesContainer.style.gridTemplateColumns = `repeat(${y}, 1fr)`;
+          
+          // 添加分割后的图片
+          result.pieces.forEach(piece => {
+            const pieceElement = document.createElement('div');
+            pieceElement.className = 'border border-gray-200 rounded-lg overflow-hidden bg-gray-50';
+            
+            const img = document.createElement('img');
+            img.src = piece.dataUrl;
+            img.alt = `分割块 ${piece.col+1}×${piece.row+1}`;
+            img.className = 'w-full h-auto object-contain';
+            
+            const caption = document.createElement('div');
+            caption.className = 'bg-gray-50 text-center text-xs text-gray-500 p-1';
+            caption.textContent = `块 ${piece.col+1}×${piece.row+1}`;
+            
+            pieceElement.appendChild(img);
+            pieceElement.appendChild(caption);
+            elements.piecesContainer.appendChild(pieceElement);
+          });
+          
+          // 强制重新渲染DOM
+          elements.piecesContainer.style.display = 'none';
+          setTimeout(() => {
+            elements.piecesContainer.style.display = 'grid';
+          }, 10);
+          
+          // 切换到步骤3
+          goToStep(3);
+        } else {
+          alert(`分割图片失败: ${result.error}`);
+        }
+      } catch (error) {
+        console.error('分割图片出错:', error);
+        alert(`分割图片时发生错误: ${error.message}`);
+      } finally {
+        elements.splitImageBtn.disabled = false;
+        elements.splitImageBtn.classList.remove('opacity-70');
+        elements.splitLoading.classList.add('hidden');
+      }
+    }
+    
+    // 保存为多个文件
+    async function saveAsFiles() {
+      const x = parseInt(elements.splitX.value);
+      const y = parseInt(elements.splitY.value);
+      
+      if (!selectedImagePath || splitPieces.length === 0) return;
+      
+      try {
+        // 显示保存状态
+        elements.saveSuccess.classList.add('hidden');
+        elements.saveError.classList.add('hidden');
+        
+        const result = await window.electronAPI.saveAsFiles({
+          pieces: splitPieces,
+          originalPath: selectedImagePath,
+          rows: y,
+          cols: x
+        });
+        
+        if (result.success) {
+          elements.saveSuccessMessage.textContent = result.message;
+          elements.saveSuccess.classList.remove('hidden');
+        } else {
+          elements.saveErrorMessage.textContent = result.error || result.message;
+          elements.saveError.classList.remove('hidden');
+        }
+      } catch (error) {
+        console.error('保存文件出错:', error);
+        elements.saveErrorMessage.textContent = error.message;
+        elements.saveError.classList.remove('hidden');
+      }
+    }
+    
+    // 保存为PDF
+    async function saveAsPdf() {
+      const x = parseInt(elements.splitX.value);
+      const y = parseInt(elements.splitY.value);
+      
+      if (!selectedImagePath || splitPieces.length === 0) return;
+      
+      try {
+        // 显示保存状态
+        elements.saveSuccess.classList.add('hidden');
+        elements.saveError.classList.add('hidden');
+        
+        const result = await window.electronAPI.saveAsPdf({
+          pieces: splitPieces,
+          originalPath: selectedImagePath,
+          rows: y,
+          cols: x
+        });
+        
+        if (result.success) {
+          elements.saveSuccessMessage.textContent = result.message;
+          elements.saveSuccess.classList.remove('hidden');
+        } else {
+          elements.saveErrorMessage.textContent = result.error || result.message;
+          elements.saveError.classList.remove('hidden');
+        }
+      } catch (error) {
+        console.error('保存PDF出错:', error);
+        elements.saveErrorMessage.textContent = error.message;
+        elements.saveError.classList.remove('hidden');
+      }
+    }
+    
+    // 切换到指定步骤
+    function goToStep(step) {
+      // 隐藏所有步骤
+      elements.step1.classList.add('hidden');
+      elements.step2.classList.add('hidden');
+      elements.step3.classList.add('hidden');
+      
+      // 重置所有指示器样式
+      elements.step1Indicator.querySelector('div').className = 'w-10 h-10 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center mb-2';
+      elements.step1Indicator.querySelector('span').className = 'text-sm font-medium text-gray-500';
+      
+      elements.step2Indicator.querySelector('div').className = 'w-10 h-10 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center mb-2';
+      elements.step2Indicator.querySelector('span').className = 'text-sm font-medium text-gray-500';
+      
+      elements.step3Indicator.querySelector('div').className = 'w-10 h-10 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center mb-2';
+      elements.step3Indicator.querySelector('span').className = 'text-sm font-medium text-gray-500';
+      
+      // 重置进度条
+      elements.progress12.style.width = '0%';
+      elements.progress23.style.width = '0%';
+      
+      // 重置预览区
+      elements.originalPreview.classList.add('hidden');
+      elements.resultPreview.classList.add('hidden');
+      elements.previewInitial.classList.remove('hidden');
+      
+      // 根据步骤显示相应内容
+      if (step === 1) {
+        elements.step1.classList.remove('hidden');
+        elements.step1Indicator.querySelector('div').className = 'w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center mb-2';
+        elements.step1Indicator.querySelector('span').className = 'text-sm font-medium text-primary';
+        
+        if (selectedImagePath) {
+          elements.previewInitial.classList.add('hidden');
+          elements.originalPreview.classList.remove('hidden');
+        }
+      } else if (step === 2) {
+        elements.step1.classList.add('hidden');
+        elements.step2.classList.remove('hidden');
+        
+        elements.step1Indicator.querySelector('div').className = 'w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center mb-2';
+        elements.step1Indicator.querySelector('span').className = 'text-sm font-medium text-primary';
+        elements.step2Indicator.querySelector('div').className = 'w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center mb-2';
+        elements.step2Indicator.querySelector('span').className = 'text-sm font-medium text-primary';
+        
+        elements.progress12.style.width = '100%';
+        
+        elements.previewInitial.classList.add('hidden');
+        elements.originalPreview.classList.remove('hidden');
+        
+        // 显示分割预览部分
+        elements.splitPreviewSection.classList.remove('hidden');
+        
+        // 进入设置分割步骤时才更新分割预览
+        updateSplitPreview();
+      } else if (step === 3) {
+        elements.step3.classList.remove('hidden');
+        
+        elements.step1Indicator.querySelector('div').className = 'w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center mb-2';
+        elements.step1Indicator.querySelector('span').className = 'text-sm font-medium text-primary';
+        elements.step2Indicator.querySelector('div').className = 'w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center mb-2';
+        elements.step2Indicator.querySelector('span').className = 'text-sm font-medium text-primary';
+        elements.step3Indicator.querySelector('div').className = 'w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center mb-2';
+        elements.step3Indicator.querySelector('span').className = 'text-sm font-medium text-primary';
+        
+        elements.progress12.style.width = '100%';
+        elements.progress23.style.width = '100%';
+        
+        elements.previewInitial.classList.add('hidden');
+        elements.originalPreview.classList.add('hidden');
+        elements.resultPreview.classList.remove('hidden');
+        
+        // 强制重新渲染结果预览区
+        elements.resultPreview.style.display = 'none';
+        setTimeout(() => {
+          elements.resultPreview.style.display = 'block';
+        }, 10);
+      }
+    }
+    
+    // 事件监听
+    function setupEventListeners() {
+      // 步骤1事件
+      elements.selectImageArea.addEventListener('click', selectImage);
+      elements.changeImageBtn.addEventListener('click', selectImage);
+      elements.toStep2Btn.addEventListener('click', () => goToStep(2));
+      
+      // 阻止拖放默认行为
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        elements.selectImageArea.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+      });
+      
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      
+      // 高亮拖放区域
+      ['dragenter', 'dragover'].forEach(eventName => {
+        elements.selectImageArea.addEventListener(eventName, highlight, false);
+      });
+      
+      ['dragleave', 'drop'].forEach(eventName => {
+        elements.selectImageArea.addEventListener(eventName, unhighlight, false);
+      });
+      
+      function highlight() {
+        elements.selectImageArea.classList.add('border-primary', 'bg-blue-50');
+      }
+      
+      function unhighlight() {
+        elements.selectImageArea.classList.remove('border-primary', 'bg-blue-50');
+      }
+      
+      // 处理拖放文件
+      elements.selectImageArea.addEventListener('drop', handleDrop, false);
+      
+      function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+          const file = files[0];
+          // 检查是否为图片文件
+          if (file.type.startsWith('image/')) {
+            selectedImagePath = file.path;
+            
+            // 显示图片信息
+            elements.imagePath.textContent = selectedImagePath;
+            elements.selectedImageInfo.classList.remove('hidden');
+            
+            // 加载图片获取尺寸 - 使用encodeURI处理中文路径
+              const img = new Image();
+              img.src = `file://${encodeURI(selectedImagePath)}`;
+              
+              img.onload = function() {
+                originalImageDimensions = { width: img.width, height: img.height };
+                elements.imageDimensions.textContent = `${img.width} × ${img.height} 像素`;
+                
+                // 显示图片预览
+                elements.originalImage.src = img.src;
+                elements.splitPreviewImage.src = img.src;
+                elements.previewInitial.classList.add('hidden');
+                elements.originalPreview.classList.remove('hidden');
+                
+                // 启用下一步按钮
+                elements.toStep2Btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                elements.toStep2Btn.disabled = false;
+                
+                // 更新分割预览
+                updateSplitPreview();
+              };
+          } else {
+            alert('请选择图片文件');
+          }
+        }
+      }
+      
+      // 步骤2事件
+      elements.decreaseX.addEventListener('click', () => {
+        let value = parseInt(elements.splitX.value);
+        if (value > 1) {
+          elements.splitX.value = value - 1;
+          updateSplitCount();
+        }
+      });
+      
+      elements.increaseX.addEventListener('click', () => {
+        let value = parseInt(elements.splitX.value);
+        if (value < 20) {
+          elements.splitX.value = value + 1;
+          updateSplitCount();
+        }
+      });
+      
+      elements.decreaseY.addEventListener('click', () => {
+        let value = parseInt(elements.splitY.value);
+        if (value > 1) {
+          elements.splitY.value = value - 1;
+          updateSplitCount();
+        }
+      });
+      
+      elements.increaseY.addEventListener('click', () => {
+        let value = parseInt(elements.splitY.value);
+        if (value < 20) {
+          elements.splitY.value = value + 1;
+          updateSplitCount();
+        }
+      });
+      
+      elements.splitX.addEventListener('change', updateSplitCount);
+      elements.splitY.addEventListener('change', updateSplitCount);
+      elements.backToStep1Btn.addEventListener('click', () => goToStep(1));
+      elements.splitImageBtn.addEventListener('click', splitImage);
+      
+      // 步骤3事件
+      elements.saveAsFilesBtn.addEventListener('click', saveAsFiles);
+      elements.saveAsPdfBtn.addEventListener('click', saveAsPdf);
+      elements.splitAnotherBtn.addEventListener('click', () => {
+        // 重置状态，准备分割新图片
+        selectedImagePath = null;
+        splitPieces = [];
+        elements.selectedImageInfo.classList.add('hidden');
+        elements.toStep2Btn.classList.add('opacity-50', 'cursor-not-allowed');
+        elements.toStep2Btn.disabled = true;
+        goToStep(1);
+      });
+      elements.backToStep2Btn.addEventListener('click', () => goToStep(2));
+    }
+    
+    // 初始化
+    function init() {
+      setupEventListeners();
+      updateSplitCount();
+      goToStep(1);
+    }
+    
+    // 启动应用
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
