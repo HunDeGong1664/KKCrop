@@ -97,7 +97,7 @@
                   <button id="decrease-x" class="bg-gray-100 hover:bg-gray-200 w-10 h-10 rounded-l-lg flex items-center justify-center transition-custom">
                     <i class="fa fa-minus"></i>
                   </button>
-                  <input type="number" id="split-x" min="1" max="20" value="2" 
+                  <input type="number" id="split-x" min="1" max="100" value="2" 
                     class="w-full h-10 border-y border-gray-300 text-center focus:outline-none focus:border-primary">
                   <button id="increase-x" class="bg-gray-100 hover:bg-gray-200 w-10 h-10 rounded-r-lg flex items-center justify-center transition-custom">
                     <i class="fa fa-plus"></i>
@@ -111,7 +111,7 @@
                   <button id="decrease-y" class="bg-gray-100 hover:bg-gray-200 w-10 h-10 rounded-l-lg flex items-center justify-center transition-custom">
                     <i class="fa fa-minus"></i>
                   </button>
-                  <input type="number" id="split-y" min="1" max="20" value="2" 
+                  <input type="number" id="split-y" min="1" max="100" value="2" 
                     class="w-full h-10 border-y border-gray-300 text-center focus:outline-none focus:border-primary">
                   <button id="increase-y" class="bg-gray-100 hover:bg-gray-200 w-10 h-10 rounded-r-lg flex items-center justify-center transition-custom">
                     <i class="fa fa-plus"></i>
@@ -208,8 +208,8 @@
             </div>
             <div id="split-preview-section" class="hidden">
               <p class="text-sm text-gray-500 mb-2">分割预览:</p>
-              <div class="border border-gray-200 rounded-lg overflow-hidden bg-gray-50 p-4">
-                <div id="split-preview-container" class="relative">
+              <div class="border border-gray-200 rounded-lg overflow-hidden bg-gray-50 p-4 flex justify-center">
+                <div id="split-preview-container" class="relative w-full max-w-[100%] flex justify-center">
                   <img id="split-preview-image" src="" alt="分割预览" class="max-w-full max-h-[300px] object-contain">
                   <div id="split-overlay" class="absolute top-0 left-0 w-full h-full pointer-events-none"></div>
                 </div>
@@ -220,7 +220,7 @@
           <!-- 分割结果预览 -->
           <div id="result-preview" class="hidden">
             <p class="text-sm text-gray-500 mb-2">分割结果:</p>
-            <div id="pieces-container" class="grid gap-4 overflow-y-auto max-h-[500px] p-2">
+            <div id="pieces-container" class="flex gap-4 overflow-x-auto max-h-[500px] p-2 custom-scrollbar-x">
               <!-- 分割后的图片将在这里动态生成 -->
             </div>
           </div>
@@ -369,9 +369,19 @@
           elements.imagePath.textContent = imagePath;
           elements.selectedImageInfo.classList.remove('hidden');
           
-          // 加载图片获取尺寸 - 使用encodeURI处理中文路径
+          // 加载图片获取尺寸 - 使用更可靠的方式处理Windows路径
           const img = new Image();
-          img.src = `file://${encodeURI(imagePath)}`;
+          // 修复Windows路径问题: 将反斜杠转换为正斜杠，正确处理file URL
+          const safeImagePath = imagePath.replace(/\\/g, '/');
+          img.src = `file:///${encodeURIComponent(safeImagePath).replace(/%2F/g, '/')}`;
+          
+          // 添加错误处理
+          img.onerror = function() {
+            console.error('图片加载失败:', img.src);
+            elements.previewLoading.classList.add('hidden');
+            elements.previewInitial.classList.remove('hidden');
+            alert('无法加载图片，请检查图片路径是否正确。');
+          };
           
           img.onload = function() {
             originalImageDimensions = { width: img.width, height: img.height };
@@ -437,8 +447,8 @@
           // 显示分割结果
           elements.piecesContainer.innerHTML = '';
           
-          // 根据实际列数设置网格
-          elements.piecesContainer.style.gridTemplateColumns = `repeat(${y}, 1fr)`;
+          // 清空之前设置的样式
+          elements.piecesContainer.style.gridTemplateColumns = '';
           
           // 添加分割后的图片
           result.pieces.forEach(piece => {
@@ -448,7 +458,19 @@
             const img = document.createElement('img');
             img.src = piece.dataUrl;
             img.alt = `分割块 ${piece.col+1}×${piece.row+1}`;
-            img.className = 'w-full h-auto object-contain';
+            
+            // 根据分割比例设置图片样式
+            if (x > y) {
+              // 横向分割数多于纵向时，宽度不变纵向排列
+              img.className = 'w-full h-auto object-contain';
+              pieceElement.className = 'border border-gray-200 rounded-lg overflow-hidden bg-gray-50 mb-4';
+              elements.piecesContainer.className = 'flex flex-col overflow-y-auto max-h-[500px] p-2 custom-scrollbar-x';
+            } else {
+              // 纵向分割数多于或等于横向时，高度不变横向排列
+              img.className = 'max-h-[400px] h-auto object-contain';
+              pieceElement.className = 'border border-gray-200 rounded-lg overflow-hidden bg-gray-50 flex-shrink-0';
+              elements.piecesContainer.className = 'flex gap-4 overflow-x-auto max-h-[500px] p-2 custom-scrollbar-x';
+            }
             
             const caption = document.createElement('div');
             caption.className = 'bg-gray-50 text-center text-xs text-gray-500 p-1';
@@ -462,7 +484,7 @@
           // 强制重新渲染DOM
           elements.piecesContainer.style.display = 'none';
           setTimeout(() => {
-            elements.piecesContainer.style.display = 'grid';
+            elements.piecesContainer.style.display = 'flex';
           }, 10);
           
           // 切换到步骤3
@@ -678,27 +700,37 @@
             elements.imagePath.textContent = selectedImagePath;
             elements.selectedImageInfo.classList.remove('hidden');
             
-            // 加载图片获取尺寸 - 使用encodeURI处理中文路径
-              const img = new Image();
-              img.src = `file://${encodeURI(selectedImagePath)}`;
+            // 加载图片获取尺寸 - 使用更可靠的方式处理Windows路径
+            const img = new Image();
+            // 修复Windows路径问题: 将反斜杠转换为正斜杠，正确处理file URL
+            const safeImagePath = selectedImagePath.replace(/\\/g, '/');
+            img.src = `file:///${encodeURIComponent(safeImagePath).replace(/%2F/g, '/')}`;
+            
+            // 添加错误处理
+            img.onerror = function() {
+              console.error('图片加载失败:', img.src);
+              elements.previewLoading.classList.add('hidden');
+              elements.previewInitial.classList.remove('hidden');
+              alert('无法加载图片，请检查图片路径是否正确。');
+            };
+            
+            img.onload = function() {
+              originalImageDimensions = { width: img.width, height: img.height };
+              elements.imageDimensions.textContent = `${img.width} × ${img.height} 像素`;
               
-              img.onload = function() {
-                originalImageDimensions = { width: img.width, height: img.height };
-                elements.imageDimensions.textContent = `${img.width} × ${img.height} 像素`;
-                
-                // 显示图片预览
-                elements.originalImage.src = img.src;
-                elements.splitPreviewImage.src = img.src;
-                elements.previewInitial.classList.add('hidden');
-                elements.originalPreview.classList.remove('hidden');
-                
-                // 启用下一步按钮
-                elements.toStep2Btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                elements.toStep2Btn.disabled = false;
-                
-                // 更新分割预览
-                updateSplitPreview();
-              };
+              // 显示图片预览
+              elements.originalImage.src = img.src;
+              elements.splitPreviewImage.src = img.src;
+              elements.previewInitial.classList.add('hidden');
+              elements.originalPreview.classList.remove('hidden');
+              
+              // 启用下一步按钮
+              elements.toStep2Btn.classList.remove('opacity-50', 'cursor-not-allowed');
+              elements.toStep2Btn.disabled = false;
+              
+              // 更新分割预览
+              updateSplitPreview();
+            };
           } else {
             alert('请选择图片文件');
           }

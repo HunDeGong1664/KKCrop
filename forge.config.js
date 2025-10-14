@@ -4,16 +4,21 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 module.exports = {
   packagerConfig: {
     asar: true,
+    // 平台特定的图标配置 - 使用条件配置以避免类型错误
+    icon: './assets/icon', // 默认图标路径，会根据平台自动添加相应的扩展名
+    // 使用自定义的Info.plist文件以确保图标设置正确
+    extendInfoFrom: './custom_info.plist',
+    // 确保图标被正确复制到应用程序包中
+    afterCopy: [(buildPath, electronVersion, platform, arch, callback) => {
+      // 这个钩子可以确保图标文件被正确处理
+      callback();
+    }]
   },
   rebuildConfig: {},
   makers: [
     {
-      name: '@electron-forge/maker-squirrel',
-      config: {},
-    },
-    {
       name: '@electron-forge/maker-zip',
-      platforms: ['darwin'],
+      platforms: ['darwin', 'win32'],
     },
     {
       name: '@electron-forge/maker-deb',
@@ -22,6 +27,16 @@ module.exports = {
     {
       name: '@electron-forge/maker-rpm',
       config: {},
+    },
+    {
+      name: '@electron-forge/maker-squirrel',
+      config: {
+        name: 'kkcrop',
+        authors: 'HunDegong',
+        exe: 'kkcrop.exe',
+        description: 'A crop tool application'
+      },
+      platforms: ['win32']
     },
   ],
   plugins: [

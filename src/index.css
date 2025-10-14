@@ -26,6 +26,24 @@
   .transition-custom {
     transition: all 0.3s ease;
   }
+  /* 美化横向滚动条 */
+  .custom-scrollbar-x {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+  }
+  .custom-scrollbar-x::-webkit-scrollbar {
+    height: 6px;
+  }
+  .custom-scrollbar-x::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar-x::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 3px;
+  }
+  .custom-scrollbar-x::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.8);
+  }
 }
 
 /* 自定义组件样式 */

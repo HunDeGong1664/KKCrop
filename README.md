@@ -12,7 +12,7 @@ KKCrop is a professional image splitting tool developed based on Electron, which
 
 ### 核心功能 / Core Features
 - **图片导入**：支持选择本地图片文件或通过拖放方式导入
-- **灵活分割**：可自定义设置横向和纵向分割数量（1-20）
+- **灵活分割**：可自定义设置横向和纵向分割数量（1-100）
 - **实时预览**：直观查看分割效果，支持缩放和平移操作
 - **多格式导出**：
   - 导出为独立图片文件（保持原始格式）
@@ -66,6 +66,12 @@ npm run package
 
 # 生成安装包（Windows）
 npm run make -- --platform=win32
+
+# 生成安装包（macOS）
+npm run make -- --platform=darwin
+
+# 生成安装包（Linux）
+npm run make -- --platform=linux
 ```
 
 ## 使用说明 / Usage
@@ -109,7 +115,7 @@ KKCrop/
 目前支持 JPG、PNG、GIF、BMP 格式的图片导入和处理。
 
 ### 最大可以分割成多少块？
-为了保证处理效率和实用性，横向和纵向分割数量均限制在 1-20 之间。
+为了保证处理效率和实用性，横向和纵向分割数量均限制在 1-100 之间。
 
 ### 为什么我的 PDF 导出包含空白页？
 这可能是由于部分图片块处理失败导致的。请尝试使用格式更标准的图片文件。

@@ -35,8 +35,10 @@ function createWindow() {
       webSecurity: false // 允许加载本地资源
     },
     title: 'KKCrop图片等比分割工具',
-    // 设置应用图标 (需要准备好图标文件并放在相应目录)
-    icon: path.join(__dirname, '../assets/icon.png')
+    // 设置应用图标 - 根据不同操作系统使用对应的图标格式
+    icon: process.platform === 'darwin' 
+      ? path.join(__dirname, '../assets/icon.icns') 
+      : path.join(__dirname, '../assets/icon.ico')
   });
 
   // 创建自定义菜单栏，完全替换默认的Electron菜单
@@ -62,7 +64,9 @@ function createWindow() {
               message: 'KKCrop图片等比分割工具',
               detail: '作者信息：\n昏德公\n\n免责声明：\n本软件仅用于学习和研究目的。\n使用本软件所产生的一切后果由用户自行承担，\n作者不承担任何法律责任。\n\n版本：1.0.0',
               buttons: ['确定'],
-              icon: null,
+              icon: process.platform === 'darwin' 
+                ? path.join(__dirname, '../assets/icon.icns') 
+                : path.join(__dirname, '../assets/icon.ico'),
               type: 'info'
             });
           }
@@ -91,8 +95,15 @@ function createWindow() {
   // 设置应用菜单
   Menu.setApplicationMenu(menu);
 
-  // 加载Vite开发服务器URL
-  mainWindow.loadURL('http://localhost:5173');
+  // 根据环境加载不同的URL
+  if (process.env.NODE_ENV === 'development') {
+    // 开发环境加载Vite开发服务器，使用环境变量PORT或默认5173端口
+    const PORT = process.env.PORT || 5173;
+    mainWindow.loadURL(`http://localhost:${PORT}`);
+  } else {
+    // 在生产环境中，HTML文件位于Vite构建的输出目录中
+    mainWindow.loadFile(path.join(__dirname, '../../.vite/renderer/main_window/index.html'));
+  }
 
   // 打开开发者工具
   // mainWindow.webContents.openDevTools();
