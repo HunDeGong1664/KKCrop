@@ -3,8 +3,7 @@
   "productName": "kkcrop",
   "version": "1.0.0",
   "description": "KKCrop图片等比分割工具",
-  "type": "module",
-  "main": "src/main.js",
+  "main": ".vite/build/main.js",
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
