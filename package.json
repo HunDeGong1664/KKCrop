@@ -1,0 +1,87 @@
+{
+  "name": "kkcrop",
+  "productName": "kkcrop",
+  "version": "1.0.0",
+  "description": "KKCrop图片等比分割工具",
+  "type": "module",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "package:win": "npx @electron/packager . --platform=win32 --arch=x64 --out=out-win",
+    "make": "electron-forge make",
+    "make:win": "electron-forge make --platform=win32",
+    "make:direct": "electron-packager . kkcrop --platform=darwin --arch=x64 --icon=assets/icon.icns --extend-info=custom_info.plist --out=out-direct --overwrite --asar --ignore=out/ --ignore=out-direct/",
+    "make:direct:win": "electron-packager . kkcrop --platform=win32 --arch=x64 --icon=assets/icon.png --out=out-win --overwrite --asar --asar-unpack=\"**/node_modules/sharp/**\" --ignore=out/ --ignore=out-win/ --no-prune --no-download=true",
+    "create-windows-installer": "node create-windows-installer.js",
+    "publish": "electron-forge publish",
+    "lint": "echo \"No linting configured\"",
+    "build:win": "electron-builder --win --x64"
+  },
+  "build": {
+    "productName": "KKCrop",
+    "appId": "com.example.kkcrop",
+    "directories": {
+      "output": "dist"
+    },
+    "asar": true,
+    "asarUnpack": [
+      "**/node_modules/sharp/**"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico",
+      "asar": true
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "KKCrop"
+    }
+  },
+  "keywords": [
+    "electron",
+    "image",
+    "splitter",
+    "crop"
+  ],
+  "author": {
+    "name": "HunDegong",
+    "email": "691325380@qq.com"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@electron-forge/cli": "^7.10.2",
+    "@electron-forge/maker-deb": "^7.10.2",
+    "@electron-forge/maker-rpm": "^7.10.2",
+    "@electron-forge/maker-squirrel": "^7.10.2",
+    "@electron-forge/maker-zip": "^7.10.2",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.10.2",
+    "@electron-forge/plugin-fuses": "^7.10.2",
+    "@electron-forge/plugin-vite": "^7.10.2",
+    "@electron/fuses": "^1.8.0",
+    "@electron/packager": "^18.4.4",
+    "@rollup/plugin-commonjs": "^28.0.6",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "autoprefixer": "^10.4.21",
+    "electron": "38.2.2",
+    "electron-builder": "^26.0.12",
+    "electron-packager": "^17.1.2",
+    "electron-winstaller": "^5.4.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17",
+    "vite": "^5.4.20"
+  },
+  "dependencies": {
+    "electron-squirrel-startup": "^1.0.1",
+    "font-awesome": "^4.7.0",
+    "pdf-lib": "^1.17.1",
+    "sharp": "^0.34.4"
+  }
+}

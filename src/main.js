@@ -1,6 +1,11 @@
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
 import started from 'electron-squirrel-startup';
+
+// 为ES模块环境提供__dirname和__filename
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -155,10 +160,10 @@ ipcMain.handle('select-image', async () => {
 ipcMain.handle('split-image', async (event, { imagePath, rows, cols }) => {
   try {
     // 导入sharp库进行图像处理
-    const sharp = require('sharp');
+    const sharp = await import('sharp');
     
     // 获取原始图像的信息
-    const image = sharp(imagePath);
+    const image = sharp.default(imagePath);
     const metadata = await image.metadata();
     const { width, height } = metadata;
     
@@ -218,9 +223,12 @@ ipcMain.handle('split-image', async (event, { imagePath, rows, cols }) => {
 ipcMain.handle('save-as-files', async (event, data) => {
   try {
     const { pieces, originalPath, rows, cols } = data;
-    const fs = require('fs');
-    const path = require('path');
-    const { dialog } = require('electron');
+    const fsModule = await import('node:fs');
+    const pathModule = await import('node:path');
+    const electron = await import('electron');
+    const fs = fsModule.default;
+    const path = pathModule.default;
+    const { dialog } = electron;
     
     // 显示保存对话框，让用户选择保存目录
     const result = await dialog.showOpenDialog({
@@ -281,12 +289,15 @@ ipcMain.handle('save-as-files', async (event, data) => {
 ipcMain.handle('save-as-pdf', async (event, data) => {
   try {
     const { pieces, originalPath, rows, cols } = data;
-    const path = require('path');
-    const { dialog } = require('electron');
-    const fs = require('fs');
+    const pathModule = await import('node:path');
+    const electron = await import('electron');
+    const fsModule = await import('node:fs');
+    const pdfLib = await import('pdf-lib');
     
-    // 导入pdf-lib库
-    const { PDFDocument } = require('pdf-lib');
+    const path = pathModule.default;
+    const { dialog } = electron;
+    const fs = fsModule.default;
+    const { PDFDocument } = pdfLib.default;
     
     // 显示保存对话框，让用户选择保存位置和文件名
     const result = await dialog.showSaveDialog({
