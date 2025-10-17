@@ -7,7 +7,8 @@
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
-    "package:win": "npx @electron/packager . --platform=win32 --arch=x64 --out=out-win",
+    "package:win": "npx @electron/packager . --platform=win32 --arch=x64 --out=out-win --no-prune --no-download=true",
+    "package:win:direct": "electron-packager . kkcrop --platform=win32 --arch=x64 --out=out-win --overwrite --asar --ignore=out/ --ignore=out-win/ --no-prune --no-download=true --no-app-copyright --no-app-version --no-version-string --no-win32metadata",
     "make": "electron-forge make",
     "make:win": "electron-forge make --platform=win32",
     "make:direct": "electron-packager . kkcrop --platform=darwin --arch=x64 --icon=assets/icon.icns --extend-info=custom_info.plist --out=out-direct --overwrite --asar --ignore=out/ --ignore=out-direct/",
@@ -15,7 +16,8 @@
     "create-windows-installer": "node create-windows-installer.js",
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\"",
-    "build:win": "electron-builder --win --x64"
+    "build:win": "electron-builder --win --x64 --dir",
+    "build:win:simple": "electron-builder --win --x64 --config.win.icon= --config.nsis.createDesktopShortcut=false"
   },
   "build": {
     "productName": "KKCrop",
