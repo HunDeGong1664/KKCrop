@@ -184,6 +184,7 @@ ipcMain.handle('split-image', async (event, { imagePath, rows, cols }) => {
         const buffer = await image
           .clone()
           .extract({ left, top, width: pieceWidth, height: pieceHeight })
+          .png()
           .toBuffer();
         
         // 转换为data URL
@@ -239,11 +240,7 @@ ipcMain.handle('save-as-files', async (event, data) => {
     if (!result.canceled && result.filePaths.length > 0) {
       const saveDir = result.filePaths[0];
       const originalName = path.basename(originalPath, path.extname(originalPath));
-      const fileExt = path.extname(originalPath).toLowerCase();
-      
-      // 确保文件扩展名是图片格式
-      const validExts = ['.jpg', '.jpeg', '.png', '.gif', '.bmp'];
-      const ext = validExts.includes(fileExt) ? fileExt : '.png';
+      const ext = '.png';
       
       // 创建保存子目录
       const outputDir = path.join(saveDir, `${originalName}_split_${cols}x${rows}`);
@@ -317,8 +314,8 @@ ipcMain.handle('save-as-pdf', async (event, data) => {
       const a4Width = 595.28;
       const a4Height = 841.89;
       
-      // 页边距
-      const margin = 20;
+      // 默认页边距（当图片比例与A4差异较大时）
+      const defaultMargin = 20;
       
       // 为每个图片块添加单独的页面
       for (const piece of pieces) {
@@ -330,13 +327,24 @@ ipcMain.handle('save-as-pdf', async (event, data) => {
           const imgBytes = Buffer.from(base64Data, 'base64');
           
           // 将图片添加到PDF
-          const image = await pdfDoc.embedPng(imgBytes);
+          let image;
+          try {
+            image = await pdfDoc.embedPng(imgBytes);
+          } catch (e) {
+            image = await pdfDoc.embedJpg(imgBytes);
+          }
           
           // 添加一个A4页面
           const page = pdfDoc.addPage([a4Width, a4Height]);
           
           // 计算图片在页面上的大小和位置（居中显示）
-          // 计算最大可显示尺寸，保留页边距
+          // 根据图片与A4比例差异动态设置页边距
+          const a4Ratio = a4Width / a4Height;
+          const imageRatio = image.width / image.height;
+          const ratioDiff = Math.abs(imageRatio - a4Ratio) / a4Ratio;
+          const margin = ratioDiff < 0.03 ? 0 : defaultMargin;
+
+          // 计算最大可显示尺寸，保留页边距（如需要）
           const maxDisplayWidth = a4Width - (margin * 2);
           const maxDisplayHeight = a4Height - (margin * 2);
           

@@ -92,3 +92,4 @@ typings/
 out/
 out-direct/
 dist/
+package-lock.json

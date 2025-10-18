@@ -8,8 +8,8 @@
   <title>KKCrop图片等比分割工具</title>
   <!-- 引入本地Font Awesome -->
   <link href="node_modules/font-awesome/css/font-awesome.min.css" rel="stylesheet">
-  <!-- 引入Tailwind CSS样式 -->
-  <link href="src/index.css" rel="stylesheet">
+  <!-- 通过JavaScript模块引入Tailwind CSS样式 -->
+  <script type="module" src="src/renderer.js"></script>
 </head>
 <body class="bg-gray-50 text-dark min-h-screen flex flex-col">
   <!-- 顶部导航栏 -->
@@ -66,7 +66,7 @@
             
             <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary transition-custom cursor-pointer" id="select-image-area">
               <i class="fa fa-upload text-4xl text-gray-400 mb-3"></i>
-              <p class="text-gray-500">点击选择图片</p>
+              <p class="text-gray-500">点击或拖拽图片到此处</p>
               <p class="text-xs text-gray-400 mt-2">支持 JPG, PNG, GIF, BMP 格式</p>
             </div>
             
@@ -463,7 +463,7 @@
             if (x > y) {
               // 横向分割数多于纵向时，宽度不变纵向排列
               img.className = 'w-full h-auto object-contain';
-              pieceElement.className = 'border border-gray-200 rounded-lg overflow-hidden bg-gray-50 mb-4';
+              pieceElement.className = 'border border-gray-200 rounded-lg overflow-hidden bg-gray-50 mb-4 flex-shrink-0';
               elements.piecesContainer.className = 'flex flex-col overflow-y-auto max-h-[500px] p-2 custom-scrollbar-x';
             } else {
               // 纵向分割数多于或等于横向时，高度不变横向排列
