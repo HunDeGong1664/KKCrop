@@ -593,6 +593,8 @@
       elements.originalPreview.classList.add('hidden');
       elements.resultPreview.classList.add('hidden');
       elements.previewInitial.classList.remove('hidden');
+      // 默认隐藏分割预览部分（仅在步骤2显示）
+      elements.splitPreviewSection.classList.add('hidden');
       
       // 根据步骤显示相应内容
       if (step === 1) {
@@ -785,9 +787,18 @@
         elements.selectedImageInfo.classList.add('hidden');
         elements.toStep2Btn.classList.add('opacity-50', 'cursor-not-allowed');
         elements.toStep2Btn.disabled = true;
+        // 隐藏分割结果与分割预览
+        elements.resultPreview.classList.add('hidden');
+        elements.piecesContainer.innerHTML = '';
+        elements.splitPreviewSection.classList.add('hidden');
         goToStep(1);
       });
-      elements.backToStep2Btn.addEventListener('click', () => goToStep(2));
+      elements.backToStep2Btn.addEventListener('click', () => {
+        // 返回修改时隐藏分割结果并清空结果列表
+        elements.resultPreview.classList.add('hidden');
+        elements.piecesContainer.innerHTML = '';
+        goToStep(2);
+      });
     }
     
     // 初始化
