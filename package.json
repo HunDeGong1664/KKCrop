@@ -8,7 +8,7 @@
     "start": "electron-forge start",
     "package": "electron-forge package",
     "package:win": "npx @electron/packager . --platform=win32 --arch=x64 --out=out-win --no-prune --no-download=true",
-    "package:win:direct": "electron-packager . kkcrop --platform=win32 --arch=x64 --out=out-win --overwrite --asar --ignore=out/ --ignore=out-win/ --no-prune --no-download=true --no-app-copyright --no-app-version --no-version-string --no-win32metadata",
+    "package:win:direct": "electron-packager . kkcrop --platform=win32 --arch=x64 --out=out-win --overwrite --asar --asar-unpack=\"node_modules/sharp/**/*\" --ignore=out/ --ignore=out-win/ --no-prune",
     "make": "electron-forge make",
     "make:win": "electron-forge make --platform=win32",
     "make:direct": "electron-packager . kkcrop --platform=darwin --arch=x64 --icon=assets/icon.icns --extend-info=custom_info.plist --out=out-direct --overwrite --asar --ignore=out/ --ignore=out-direct/",
