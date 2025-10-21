@@ -15,7 +15,7 @@ const createInstaller = async () => {
       authors: 'HunDegong',
       exe: 'kkcrop.exe',
       name: 'kkcrop',
-      description: 'KKCrop图片等比分割工具',
+      description: 'KKCrop图片处理工具',
       setupExe: 'KKCropInstaller.exe',
       setupIcon: '', // 如果有图标可以添加路径
     });

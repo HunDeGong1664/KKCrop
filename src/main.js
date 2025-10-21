@@ -31,7 +31,7 @@ let mainWindow;
 function createWindow() {
   // 创建浏览器窗口
   mainWindow = new BrowserWindow({
-    width: 1000,
+    width: 1200,
     height: 800,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -39,7 +39,7 @@ function createWindow() {
       nodeIntegration: false,
       webSecurity: false // 允许加载本地资源
     },
-    title: 'KKCrop图片等比分割工具',
+    title: 'KKCrop图片处理工具',
     // 设置应用图标 - 根据不同操作系统使用对应的图标格式
     icon: process.platform === 'darwin' 
       ? path.join(__dirname, '../assets/icon.icns') 
@@ -66,7 +66,7 @@ function createWindow() {
           click: () => {
             dialog.showMessageBox({
               title: '关于我们',
-              message: 'KKCrop图片等比分割工具',
+              message: 'KKCrop图片处理工具',
               detail: '作者信息：\n昏德公\n\n免责声明：\n本软件仅用于学习和研究目的。\n使用本软件所产生的一切后果由用户自行承担，\n作者不承担任何法律责任。\n\n版本：1.0.0',
               buttons: ['确定'],
               icon: process.platform === 'darwin' 
@@ -146,7 +146,7 @@ ipcMain.handle('select-image', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile'],
     filters: [
-      { name: '图片文件', extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp'] }
+      { name: '图片文件', extensions: ['jpg', 'jpeg', 'png'] }
     ]
   });
 
@@ -154,6 +154,20 @@ ipcMain.handle('select-image', async () => {
     return result.filePaths[0];
   }
   return null;
+});
+
+// 新增：选择多张图片
+ipcMain.handle('select-images', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile', 'multiSelections'],
+    filters: [
+      { name: '图片文件', extensions: ['jpg', 'jpeg', 'png'] }
+    ]
+  });
+  if (!result.canceled && result.filePaths.length > 0) {
+    return result.filePaths;
+  }
+  return [];
 });
 
 // 分割图片功能 - 实际处理图片
@@ -290,7 +304,7 @@ ipcMain.handle('save-as-pdf', async (event, data) => {
     const electron = await import('electron');
     const fsModule = await import('node:fs');
     const pdfLib = await import('pdf-lib');
-    
+
     const path = pathModule.default;
     const { dialog } = electron;
     const fs = fsModule.default;
@@ -395,5 +409,94 @@ ipcMain.handle('save-as-pdf', async (event, data) => {
       success: false,
       error: error.message
     };
+  }
+});
+
+// 新增：多图转PDF（每张图片一页，A4比例近似铺满，否则居中）
+ipcMain.handle('images-to-pdf', async (event, data) => {
+  try {
+    const { imagePaths } = data;
+    const pathModule = await import('node:path');
+    const electron = await import('electron');
+    const fsModule = await import('node:fs');
+    const pdfLib = await import('pdf-lib');
+
+    const path = pathModule.default;
+    const { dialog } = electron;
+    const fs = fsModule.default;
+    const { PDFDocument } = pdfLib.default;
+
+    if (!imagePaths || imagePaths.length === 0) {
+      return { success: false, message: '未选择图片' };
+    }
+
+    // 保存对话框
+    const defaultName = path.basename(imagePaths[0], path.extname(imagePaths[0])) + '_and_others.pdf';
+    const result = await dialog.showSaveDialog({
+      title: '保存为PDF',
+      defaultPath: path.join(path.dirname(imagePaths[0]), defaultName),
+      filters: [{ name: 'PDF文件', extensions: ['pdf'] }]
+    });
+
+    if (!result.canceled && result.filePath) {
+      const pdfDoc = await PDFDocument.create();
+
+      const a4Width = 595.28;
+      const a4Height = 841.89;
+      const defaultMargin = 20;
+
+      for (const imagePath of imagePaths) {
+        try {
+          let imgBytes = fs.readFileSync(imagePath);
+
+          // 优先尝试按原格式嵌入；失败则尝试另一种；仍失败则用sharp转PNG
+          let image;
+          try {
+            image = await pdfDoc.embedPng(imgBytes);
+          } catch (e1) {
+            try {
+              image = await pdfDoc.embedJpg(imgBytes);
+            } catch (e2) {
+              const sharp = await import('sharp');
+              const pngBuffer = await sharp.default(imagePath).png().toBuffer();
+              image = await pdfDoc.embedPng(pngBuffer);
+            }
+          }
+
+          const page = pdfDoc.addPage([a4Width, a4Height]);
+
+          // 动态边距：A4比例差异小于3%则0边距
+          const a4Ratio = a4Width / a4Height;
+          const imageRatio = image.width / image.height;
+          const ratioDiff = Math.abs(imageRatio - a4Ratio) / a4Ratio;
+          const margin = ratioDiff < 0.03 ? 0 : defaultMargin;
+
+          const maxDisplayWidth = a4Width - margin * 2;
+          const maxDisplayHeight = a4Height - margin * 2;
+          const widthScale = maxDisplayWidth / image.width;
+          const heightScale = maxDisplayHeight / image.height;
+          const scale = Math.min(widthScale, heightScale, 1);
+          const imgWidth = image.width * scale;
+          const imgHeight = image.height * scale;
+          const x = (a4Width - imgWidth) / 2;
+          const y = (a4Height - imgHeight) / 2;
+
+          page.drawImage(image, { x, y, width: imgWidth, height: imgHeight });
+        } catch (imgError) {
+          console.warn('处理图片失败:', imagePath, imgError);
+          // 跳过该图片
+        }
+      }
+
+      const pdfBytes = await pdfDoc.save();
+      fs.writeFileSync(result.filePath, pdfBytes);
+
+      return { success: true, message: `成功保存PDF文件到: ${result.filePath}`, filePath: result.filePath };
+    } else {
+      return { success: false, message: '用户取消了保存操作' };
+    }
+  } catch (error) {
+    console.error('批量保存PDF时出错:', error);
+    return { success: false, error: error.message };
   }
 });

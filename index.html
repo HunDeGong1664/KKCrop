@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- 添加内容安全策略 (CSP) -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:5173; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:5173; img-src 'self' data: file:;">
-  <title>KKCrop图片等比分割工具</title>
+  <title>KKCrop图片处理工具</title>
   <!-- 引入本地Font Awesome -->
   <link href="node_modules/font-awesome/css/font-awesome.min.css" rel="stylesheet">
   <!-- 通过JavaScript模块引入Tailwind CSS样式 -->
@@ -13,222 +13,293 @@
 </head>
 <body class="bg-gray-50 text-dark min-h-screen flex flex-col">
   <!-- 顶部导航栏 -->
-  <header class="bg-white shadow-md py-4 px-6">
+  <header class="bg-white shadow-md py-4 px-6 fixed top-0 left-0 right-0 z-40">
     <div class="container mx-auto flex justify-between items-center">
       <div class="flex items-center space-x-2">
         <i class="fa fa-crop text-primary text-2xl"></i>
-        <h1 class="text-xl font-bold text-primary">KKCrop图片等比分割工具</h1>
+        <h1 class="text-xl font-bold text-primary">KKCrop图片处理工具</h1>
       </div>
       <div class="text-gray-500 text-sm">
-        <span id="app-version">v1.0.0</span>
+        <span id="app-version">v1.1.0</span>
       </div>
     </div>
   </header>
 
   <!-- 主内容区 -->
-  <main class="flex-grow container mx-auto p-6">
-    <!-- 步骤指示器 -->
-    <div class="flex justify-between items-center mb-8 max-w-3xl mx-auto">
-      <div class="flex flex-col items-center" id="step-1-indicator">
-        <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center mb-2">
-          <i class="fa fa-image"></i>
+  <main class="flex-grow p-6 pt-16 pl-56">
+    <!-- 固定左侧菜单 -->
+    <aside id="fixed-sidebar" class="fixed left-0 top-16 bottom-0 w-44 bg-white border-r shadow-lg z-30">
+      <div class="p-4">
+        <h2 class="text-lg font-semibold border-b pb-2 mb-3">功能菜单</h2>
+        <div id="side-menu" class="space-y-2">
+          <button id="menu-split" class="w-full bg-primary text-white py-2 rounded-lg font-medium transition-custom flex items-center justify-start px-3">
+            <i class="fa fa-crop mr-2"></i>
+            <span>等比切割图片</span>
+          </button>
+          <button id="menu-pdf" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg font-medium transition-custom flex items-center justify-start px-3">
+            <i class="fa fa-file-pdf-o mr-2"></i>
+            <span>图片转PDF</span>
+          </button>
         </div>
-        <span class="text-sm font-medium text-primary">选择图片</span>
       </div>
-      <div class="flex-1 h-1 mx-2 bg-gray-200">
-        <div class="h-full bg-primary transition-all duration-500" id="progress-1-2" style="width: 0%"></div>
-      </div>
-      <div class="flex flex-col items-center" id="step-2-indicator">
-        <div class="w-10 h-10 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center mb-2">
-          <i class="fa fa-sliders"></i>
-        </div>
-        <span class="text-sm font-medium text-gray-500">设置分割</span>
-      </div>
-      <div class="flex-1 h-1 mx-2 bg-gray-200">
-        <div class="h-full bg-primary transition-all duration-500" id="progress-2-3" style="width: 0%"></div>
-      </div>
-      <div class="flex flex-col items-center" id="step-3-indicator">
-        <div class="w-10 h-10 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center mb-2">
-          <i class="fa fa-th-large"></i>
-        </div>
-        <span class="text-sm font-medium text-gray-500">预览保存</span>
-      </div>
-    </div>
-
-    <!-- 步骤内容区 -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <!-- 左侧控制面板 -->
-      <div class="lg:col-span-1">
-        <div class="bg-white rounded-xl shadow-lg p-6 h-full">
-          <!-- 步骤1：选择图片 -->
-          <div id="step-1" class="space-y-6">
-            <h2 class="text-lg font-semibold border-b pb-2">选择图片</h2>
-            
-            <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary transition-custom cursor-pointer" id="select-image-area">
-              <i class="fa fa-upload text-4xl text-gray-400 mb-3"></i>
-              <p class="text-gray-500">点击或拖拽图片到此处</p>
-              <p class="text-xs text-gray-400 mt-2">支持 JPG, PNG, GIF, BMP 格式</p>
-            </div>
-            
-            <div id="selected-image-info" class="hidden">
-              <div class="bg-gray-50 p-3 rounded-lg text-sm">
-                <p class="truncate" id="image-path"></p>
-                <p class="text-gray-500 mt-1" id="image-dimensions"></p>
+    </aside>
+    
+    <!-- 右侧内容区 -->
+    <div>
+        <!-- 页面：切割 -->
+        <div id="split-page">
+          <!-- 步骤指示器 -->
+          <div class="flex justify-between items-center mt-8 mb-8 max-w-3xl mx-auto">
+            <div class="flex flex-col items-center" id="step-1-indicator">
+              <div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center mb-2">
+                <i class="fa fa-image"></i>
               </div>
-              <button id="change-image-btn" class="mt-2 text-sm text-primary hover:text-primary/80 transition-custom">
-                <i class="fa fa-refresh mr-1"></i> 更换图片
-              </button>
+              <span class="text-sm font-medium text-primary">选择图片</span>
             </div>
-            
-            <button id="to-step-2-btn" class="w-full bg-primary hover:bg-primary/90 text-white py-3 rounded-lg font-medium transition-custom flex items-center justify-center opacity-50 cursor-not-allowed" disabled>
-              <span>下一步</span>
-              <i class="fa fa-arrow-right ml-2"></i>
-            </button>
-          </div>
-          
-          <!-- 步骤2：设置分割参数 -->
-          <div id="step-2" class="space-y-6 hidden">
-            <h2 class="text-lg font-semibold border-b pb-2">设置分割参数</h2>
-            
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">横向分割 (X)</label>
-                <div class="flex items-center">
-                  <button id="decrease-x" class="bg-gray-100 hover:bg-gray-200 w-10 h-10 rounded-l-lg flex items-center justify-center transition-custom">
-                    <i class="fa fa-minus"></i>
-                  </button>
-                  <input type="number" id="split-x" min="1" max="100" value="2" 
-                    class="w-full h-10 border-y border-gray-300 text-center focus:outline-none focus:border-primary">
-                  <button id="increase-x" class="bg-gray-100 hover:bg-gray-200 w-10 h-10 rounded-r-lg flex items-center justify-center transition-custom">
-                    <i class="fa fa-plus"></i>
-                  </button>
-                </div>
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">纵向分割 (Y)</label>
-                <div class="flex items-center">
-                  <button id="decrease-y" class="bg-gray-100 hover:bg-gray-200 w-10 h-10 rounded-l-lg flex items-center justify-center transition-custom">
-                    <i class="fa fa-minus"></i>
-                  </button>
-                  <input type="number" id="split-y" min="1" max="100" value="2" 
-                    class="w-full h-10 border-y border-gray-300 text-center focus:outline-none focus:border-primary">
-                  <button id="increase-y" class="bg-gray-100 hover:bg-gray-200 w-10 h-10 rounded-r-lg flex items-center justify-center transition-custom">
-                    <i class="fa fa-plus"></i>
-                  </button>
-                </div>
-              </div>
-              
-              <div class="p-3 bg-blue-50 rounded-lg text-sm text-blue-700 flex items-start">
-                <i class="fa fa-info-circle mt-0.5 mr-2"></i>
-                <p>图片将被等分为 <span id="split-count">4</span> 份 (横向 <span id="split-x-display">2</span> 份 × 纵向 <span id="split-y-display">2</span> 份)</p>
-              </div>
+            <div class="flex-1 h-1 mx-2 bg-gray-200">
+              <div class="h-full bg-primary transition-all duration-500" id="progress-1-2" style="width: 0%"></div>
             </div>
-            
-            <div class="flex space-x-3 pt-2">
-              <button id="back-to-step-1-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg font-medium transition-custom">
-                <i class="fa fa-arrow-left mr-2"></i>
-                <span>上一步</span>
-              </button>
-              <button id="split-image-btn" class="flex-1 bg-secondary hover:bg-secondary/90 text-white py-3 rounded-lg font-medium transition-custom flex items-center justify-center">
-                <i class="fa fa-scissors mr-2"></i>
-                <span>裁剪图片</span>
-              </button>
+            <div class="flex flex-col items-center" id="step-2-indicator">
+              <div class="w-10 h-10 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center mb-2">
+                <i class="fa fa-sliders"></i>
+              </div>
+              <span class="text-sm font-medium text-gray-500">设置分割</span>
             </div>
-            
-            <!-- 加载指示器 -->
-            <div id="split-loading" class="hidden py-4 text-center">
-              <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-              <p class="mt-2 text-gray-600">正在裁剪图片...</p>
+            <div class="flex-1 h-1 mx-2 bg-gray-200">
+              <div class="h-full bg-primary transition-all duration-500" id="progress-2-3" style="width: 0%"></div>
+            </div>
+            <div class="flex flex-col items-center" id="step-3-indicator">
+              <div class="w-10 h-10 rounded-full bg-gray-300 text-gray-600 flex items-center justify-center mb-2">
+                <i class="fa fa-th-large"></i>
+              </div>
+              <span class="text-sm font-medium text-gray-500">预览保存</span>
             </div>
           </div>
           
-          <!-- 步骤3：保存选项 -->
-          <div id="step-3" class="space-y-6 hidden">
-            <h2 class="text-lg font-semibold border-b pb-2">保存选项</h2>
-            
-            <div class="space-y-4">
-              <div class="p-3 bg-green-50 rounded-lg text-sm text-green-700 flex items-start">
-                <i class="fa fa-check-circle mt-0.5 mr-2"></i>
-                <p>图片已成功分割为 <span id="result-count">4</span> 份</p>
+          <!-- 原有的左右布局（保留原样） -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- 左侧控制面板：保留原有 step-1/2/3 -->
+            <div class="lg:col-span-1">
+              <div class="bg-white rounded-xl shadow-lg p-6 h-full">
+                <!-- 步骤1：选择图片 -->
+                <div id="step-1" class="space-y-6">
+                  <h2 class="text-lg font-semibold border-b pb-2">选择图片</h2>
+                  
+                  <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary transition-custom cursor-pointer" id="select-image-area">
+                    <i class="fa fa-upload text-4xl text-gray-400 mb-3"></i>
+                    <p class="text-gray-500">点击选择图片</p>
+                    <p class="text-xs text-gray-400 mt-2">支持 JPG, PNG, GIF, BMP 格式</p>
+                  </div>
+                  
+                  <div id="selected-image-info" class="hidden">
+                    <div class="bg-gray-50 p-3 rounded-lg text-sm">
+                      <p class="truncate" id="image-path"></p>
+                      <p class="text-gray-500 mt-1" id="image-dimensions"></p>
+                    </div>
+                    <button id="change-image-btn" class="mt-2 text-sm text-primary hover:text-primary/80 transition-custom">
+                      <i class="fa fa-refresh mr-1"></i> 更换图片
+                    </button>
+                  </div>
+                  
+                  <button id="to-step-2-btn" class="w-full bg-primary hover:bg-primary/90 text-white py-3 rounded-lg font-medium transition-custom flex items-center justify-center opacity-50 cursor-not-allowed" disabled>
+                    <span>下一步</span>
+                    <i class="fa fa-arrow-right ml-2"></i>
+                  </button>
+                </div>
+                
+                <!-- 步骤2：设置分割参数 -->
+                <div id="step-2" class="space-y-6 hidden">
+                  <h2 class="text-lg font-semibold border-b pb-2">设置分割参数</h2>
+                  
+                  <div class="space-y-4">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">横向分割 (X)</label>
+                      <div class="flex items-center">
+                        <button id="decrease-x" class="bg-gray-100 hover:bg-gray-200 w-10 h-10 rounded-l-lg flex items-center justify-center transition-custom">
+                          <i class="fa fa-minus"></i>
+                        </button>
+                        <input type="number" id="split-x" min="1" max="100" value="2" 
+                          class="w-full h-10 border-y border-gray-300 text-center focus:outline-none focus:border-primary">
+                        <button id="increase-x" class="bg-gray-100 hover:bg-gray-200 w-10 h-10 rounded-r-lg flex items-center justify-center transition-custom">
+                          <i class="fa fa-plus"></i>
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">纵向分割 (Y)</label>
+                      <div class="flex items-center">
+                        <button id="decrease-y" class="bg-gray-100 hover:bg-gray-200 w-10 h-10 rounded-l-lg flex items-center justify-center transition-custom">
+                          <i class="fa fa-minus"></i>
+                        </button>
+                        <input type="number" id="split-y" min="1" max="100" value="2" 
+                          class="w-full h-10 border-y border-gray-300 text-center focus:outline-none focus:border-primary">
+                        <button id="increase-y" class="bg-gray-100 hover:bg-gray-200 w-10 h-10 rounded-r-lg flex items-center justify-center transition-custom">
+                          <i class="fa fa-plus"></i>
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div class="p-3 bg-blue-50 rounded-lg text-sm text-blue-700 flex items-start">
+                      <i class="fa fa-info-circle mt-0.5 mr-2"></i>
+                      <p>图片将被等分为 <span id="split-count">4</span> 份 (横向 <span id="split-x-display">2</span> 份 × 纵向 <span id="split-y-display">2</span> 份)</p>
+                    </div>
+                  </div>
+                  
+                  <div class="flex space-x-3 pt-2">
+                    <button id="back-to-step-1-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg font-medium transition-custom">
+                      <i class="fa fa-arrow-left mr-2"></i>
+                      <span>上一步</span>
+                    </button>
+                    <button id="split-image-btn" class="flex-1 bg-secondary hover:bg-secondary/90 text-white py-3 rounded-lg font-medium transition-custom flex items-center justify-center">
+                      <i class="fa fa-scissors mr-2"></i>
+                      <span>裁剪图片</span>
+                    </button>
+                  </div>
+                  
+                  <!-- 加载指示器 -->
+                  <div id="split-loading" class="hidden py-4 text-center">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+                    <p class="mt-2 text-gray-600">正在裁剪图片...</p>
+                  </div>
+                </div>
+                
+                <!-- 步骤3：保存选项 -->
+                <div id="step-3" class="space-y-6 hidden">
+                  <h2 class="text-lg font-semibold border-b pb-2">保存选项</h2>
+                  
+                  <div class="space-y-4">
+                    <div class="p-3 bg-green-50 rounded-lg text-sm text-green-700 flex items-start">
+                      <i class="fa fa-check-circle mt-0.5 mr-2"></i>
+                      <p>图片已成功分割为 <span id="result-count">4</span> 份</p>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                      <button id="save-as-files-btn" class="flex items-center justify-center bg-primary hover:bg-primary/90 text-white py-3 rounded-lg font-medium transition-custom">
+                        <i class="fa fa-file-image-o mr-2"></i>
+                        <span>保存为图片</span>
+                      </button>
+                      <button id="save-as-pdf-btn" class="flex items-center justify-center bg-accent hover:bg-accent/90 text-white py-3 rounded-lg font-medium transition-custom">
+                        <i class="fa fa-file-pdf-o mr-2"></i>
+                        <span>保存为PDF</span>
+                      </button>
+                    </div>
+                    
+                    <button id="split-another-btn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg font-medium transition-custom text-sm">
+                      <i class="fa fa-refresh mr-1"></i> 分割另一张图片
+                    </button>
+                  </div>
+                  
+                  <div class="flex space-x-3 pt-2">
+                    <button id="back-to-step-2-btn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg font-medium transition-custom">
+                      <i class="fa fa-arrow-left mr-2"></i>
+                      <span>返回修改</span>
+                    </button>
+                  </div>
+                  
+                  <!-- 保存状态提示 -->
+                  <div id="save-success" class="hidden p-3 bg-green-50 rounded-lg text-sm text-green-700">
+                    <i class="fa fa-check-circle mr-1"></i>
+                    <span id="save-success-message"></span>
+                  </div>
+                  <div id="save-error" class="hidden p-3 bg-red-50 rounded-lg text-sm text-red-700">
+                    <i class="fa fa-exclamation-circle mr-1"></i>
+                    <span id="save-error-message"></span>
+                  </div>
+                </div>
+                
               </div>
-              
-              <div class="grid grid-cols-2 gap-3">
-                <button id="save-as-files-btn" class="flex items-center justify-center bg-primary hover:bg-primary/90 text-white py-3 rounded-lg font-medium transition-custom">
-                  <i class="fa fa-file-image-o mr-2"></i>
-                  <span>保存为图片</span>
-                </button>
-                <button id="save-as-pdf-btn" class="flex items-center justify-center bg-accent hover:bg-accent/90 text-white py-3 rounded-lg font-medium transition-custom">
-                  <i class="fa fa-file-pdf-o mr-2"></i>
-                  <span>保存为PDF</span>
-                </button>
-              </div>
-              
-              <button id="split-another-btn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg font-medium transition-custom text-sm">
-                <i class="fa fa-refresh mr-1"></i> 分割另一张图片
-              </button>
             </div>
             
-            <div class="flex space-x-3 pt-2">
-              <button id="back-to-step-2-btn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 rounded-lg font-medium transition-custom">
-                <i class="fa fa-arrow-left mr-2"></i>
-                <span>返回修改</span>
+            <!-- 右侧预览区 -->
+            <div class="lg:col-span-2">
+              <div class="bg-white rounded-xl shadow-lg p-6 h-full">
+                <h2 class="text-lg font-semibold border-b pb-2 mb-4">预览</h2>
+                
+                <!-- 初始状态 -->
+                <div id="preview-initial" class="flex flex-col items-center justify-center h-[500px] text-gray-400">
+                  <i class="fa fa-picture-o text-6xl mb-4"></i>
+                  <p>请选择一张图片进行分割</p>
+                </div>
+                
+                <!-- 原图预览 -->
+                <div id="original-preview" class="hidden">
+                  <p class="text-sm text-gray-500 mb-2">原始图片:</p>
+                  <div class="border border-gray-200 rounded-lg overflow-hidden mb-6 bg-gray-50 flex justify-center p-4">
+                    <img id="original-image" src="" alt="原始图片" class="max-w-full max-h-[300px] object-contain">
+                  </div>
+                  <div id="split-preview-section" class="hidden">
+                    <p class="text-sm text-gray-500 mb-2">分割预览:</p>
+                    <div class="border border-gray-200 rounded-lg overflow-hidden bg-gray-50 p-4 flex justify-center">
+                      <div id="split-preview-container" class="relative w-full max-w-[100%] flex justify-center">
+                        <img id="split-preview-image" src="" alt="分割预览" class="max-w-full max-h-[300px] object-contain">
+                        <div id="split-overlay" class="absolute top-0 left-0 w-full h-full pointer-events-none"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- 分割结果预览 -->
+                <div id="result-preview" class="hidden">
+                  <p class="text-sm text-gray-500 mb-2">分割结果:</p>
+                  <div id="pieces-container" class="flex gap-4 overflow-x-auto max-h-[500px] p-2 custom-scrollbar-x">
+                    <!-- 分割后的图片将在这里动态生成 -->
+                  </div>
+                </div>
+                
+                <!-- 加载状态 -->
+                <div id="preview-loading" class="hidden flex flex-col items-center justify-center h-[500px]">
+                  <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                  <p class="mt-4 text-gray-600">正在加载图片...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 页面：PDF -->
+        <div id="pdf-page" class="hidden">
+          <div class="bg-white rounded-xl shadow-lg mt-6 p-6 h-full">
+            <h2 class="text-lg font-semibold border-b pb-2 mb-4">图片转PDF</h2>
+            
+            <!-- 按钮左右排布 + 清空按钮（有图片时显示） -->
+            <div class="flex items-center gap-3">
+              <button id="select-multi-images-btn" class="flex-1 bg-secondary hover:bg-secondary/90 text-white py-3 rounded-lg font-medium transition-custom flex items-center justify-center">
+                <i class="fa fa-files-o mr-2"></i>
+                <span>选择一张或多张图片</span>
+              </button>
+              <button id="convert-multi-pdf-btn" class="flex-1 bg-accent hover:bg-accent/90 text-white py-3 rounded-lg font-medium transition-custom flex items-center justify-center opacity-50 cursor-not-allowed" disabled>
+                <i class="fa fa-file-pdf-o mr-2"></i>
+                <span>转换为PDF</span>
+              </button>
+              <button id="clear-multi-images-btn" class="shrink-0 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 rounded-lg transition-custom flex items-center hidden">
+                <i class="fa fa-trash-o mr-2"></i>
+                <span>清空</span>
               </button>
             </div>
+            <p id="multi-images-info" class="text-xs text-gray-500 mt-2 hidden">尚未选择图片</p>
             
-            <!-- 保存状态提示 -->
-            <div id="save-success" class="hidden p-3 bg-green-50 rounded-lg text-sm text-green-700">
+            <div id="multi-pdf-success" class="hidden p-3 bg-green-50 rounded-lg text-sm text-green-700 mt-4">
               <i class="fa fa-check-circle mr-1"></i>
-              <span id="save-success-message"></span>
+              <span id="multi-pdf-success-message"></span>
             </div>
-            <div id="save-error" class="hidden p-3 bg-red-50 rounded-lg text-sm text-red-700">
+            <div id="multi-pdf-error" class="hidden p-3 bg-red-50 rounded-lg text-sm text-red-700 mt-2">
               <i class="fa fa-exclamation-circle mr-1"></i>
-              <span id="save-error-message"></span>
+              <span id="multi-pdf-error-message"></span>
             </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 右侧预览区 -->
-      <div class="lg:col-span-2">
-        <div class="bg-white rounded-xl shadow-lg p-6 h-full">
-          <h2 class="text-lg font-semibold border-b pb-2 mb-4">预览</h2>
-          
-          <!-- 初始状态 -->
-          <div id="preview-initial" class="flex flex-col items-center justify-center h-[500px] text-gray-400">
-            <i class="fa fa-picture-o text-6xl mb-4"></i>
-            <p>请选择一张图片进行分割</p>
-          </div>
-          
-          <!-- 原图预览 -->
-          <div id="original-preview" class="hidden">
-            <p class="text-sm text-gray-500 mb-2">原始图片:</p>
-            <div class="border border-gray-200 rounded-lg overflow-hidden mb-6 bg-gray-50 flex justify-center p-4">
-              <img id="original-image" src="" alt="原始图片" class="max-w-full max-h-[300px] object-contain">
+            <!-- 生成过程loading提示 -->
+            <div id="multi-pdf-loading" class="hidden p-3 bg-blue-50 rounded-lg text-sm text-blue-700 mt-2 flex items-center">
+              <i class="fa fa-spinner fa-spin mr-2"></i>
+              <span>正在生成PDF，请稍候…</span>
             </div>
-            <div id="split-preview-section" class="hidden">
-              <p class="text-sm text-gray-500 mb-2">分割预览:</p>
-              <div class="border border-gray-200 rounded-lg overflow-hidden bg-gray-50 p-4 flex justify-center">
-                <div id="split-preview-container" class="relative w-full max-w-[100%] flex justify-center">
-                  <img id="split-preview-image" src="" alt="分割预览" class="max-w-full max-h-[300px] object-contain">
-                  <div id="split-overlay" class="absolute top-0 left-0 w-full h-full pointer-events-none"></div>
-                </div>
+            
+            <!-- 预览所选图片（横向滚动） -->
+            <div id="pdf-preview-section" class="mt-6 hidden">
+              <p class="text-sm text-gray-500 mb-2">已选择图片预览:</p>
+              <div id="pdf-preview-container" class="flex gap-3 overflow-x-auto p-2 custom-scrollbar-x">
+                <!-- 选择后动态生成缩略图 -->
               </div>
             </div>
-          </div>
-          
-          <!-- 分割结果预览 -->
-          <div id="result-preview" class="hidden">
-            <p class="text-sm text-gray-500 mb-2">分割结果:</p>
-            <div id="pieces-container" class="flex gap-4 overflow-x-auto max-h-[500px] p-2 custom-scrollbar-x">
-              <!-- 分割后的图片将在这里动态生成 -->
-            </div>
-          </div>
-          
-          <!-- 加载状态 -->
-          <div id="preview-loading" class="hidden flex flex-col items-center justify-center h-[500px]">
-            <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-            <p class="mt-4 text-gray-600">正在加载图片...</p>
           </div>
         </div>
       </div>
@@ -238,7 +309,7 @@
   <!-- 页脚 -->
   <footer class="bg-white border-t mt-8 py-4 px-6">
     <div class="container mx-auto text-center text-gray-500 text-sm">
-      <p>KKCrop图片等比分割工具 by 昏德公 &copy; 2025</p>
+      <p>KKCrop图片处理工具 by 昏德公 &copy; 2025</p>
     </div>
   </footer>
 
@@ -248,6 +319,8 @@
     let selectedImagePath = null;
     let originalImageDimensions = { width: 0, height: 0 };
     let splitPieces = [];
+    // 新增：多图转PDF选择列表
+    let multiImagePaths = [];
     
     // DOM元素
     const elements = {
@@ -295,6 +368,20 @@
       saveSuccessMessage: document.getElementById('save-success-message'),
       saveError: document.getElementById('save-error'),
       saveErrorMessage: document.getElementById('save-error-message'),
+      
+      // 新增：多图转PDF工具元素
+      selectMultiImagesBtn: document.getElementById('select-multi-images-btn'),
+      multiImagesInfo: document.getElementById('multi-images-info'),
+      convertMultiPdfBtn: document.getElementById('convert-multi-pdf-btn'),
+      multiPdfSuccess: document.getElementById('multi-pdf-success'),
+      multiPdfSuccessMessage: document.getElementById('multi-pdf-success-message'),
+      multiPdfError: document.getElementById('multi-pdf-error'),
+      multiPdfErrorMessage: document.getElementById('multi-pdf-error-message'),
+      
+      // PDF预览区元素
+      pdfPreviewSection: document.getElementById('pdf-preview-section'),
+      pdfPreviewContainer: document.getElementById('pdf-preview-container'),
+      clearMultiImagesBtn: document.getElementById('clear-multi-images-btn'),
       
       // 预览区元素
       previewInitial: document.getElementById('preview-initial'),
@@ -568,6 +655,161 @@
       }
     }
     
+    // 新增：更新PDF预览缩略图（横向滚动缩略图）
+    function updatePdfPreview() {
+      if (!elements.pdfPreviewContainer || !elements.pdfPreviewSection) return;
+      elements.pdfPreviewContainer.innerHTML = '';
+      if (!multiImagePaths || multiImagePaths.length === 0) {
+        elements.pdfPreviewSection.classList.add('hidden');
+        if (elements.clearMultiImagesBtn) elements.clearMultiImagesBtn.classList.add('hidden');
+        return;
+      }
+      elements.pdfPreviewSection.classList.remove('hidden');
+      if (elements.clearMultiImagesBtn) elements.clearMultiImagesBtn.classList.remove('hidden');
+      multiImagePaths.forEach((imgPath, index) => {
+        const item = document.createElement('div');
+        item.className = 'relative border border-gray-200 rounded-lg overflow-hidden bg-gray-50 flex-shrink-0 cursor-move';
+        // 启用拖拽排序
+        item.setAttribute('draggable', 'true');
+        item.dataset.index = String(index);
+        item.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', String(index));
+          item.classList.add('ring-2', 'ring-blue-400');
+        });
+        item.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          item.classList.add('ring-2', 'ring-blue-400');
+        });
+        item.addEventListener('dragleave', () => {
+          item.classList.remove('ring-2', 'ring-blue-400');
+        });
+        item.addEventListener('drop', (e) => {
+          e.preventDefault();
+          const fromIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+          const toIndex = parseInt(item.dataset.index || '0', 10);
+          if (!Number.isNaN(fromIndex) && !Number.isNaN(toIndex) && fromIndex !== toIndex) {
+            const moved = multiImagePaths.splice(fromIndex, 1)[0];
+            multiImagePaths.splice(toIndex, 0, moved);
+          }
+          // 更新数量提示与预览
+          elements.multiImagesInfo.textContent = `已选择 ${multiImagePaths.length} 张图片`;
+          elements.multiImagesInfo.classList.remove('hidden');
+          updatePdfPreview();
+          item.classList.remove('ring-2', 'ring-blue-400');
+        });
+        item.addEventListener('dragend', () => {
+          item.classList.remove('ring-2', 'ring-blue-400');
+        });
+        
+        const img = document.createElement('img');
+        const safePath = imgPath.replace(/\\/g, '/');
+        img.src = `file:///${encodeURIComponent(safePath).replace(/%2F/g, '/')}`;
+        img.alt = `预览图片 ${index + 1}`;
+        img.className = 'max-h-[160px] h-auto object-contain';
+        item.appendChild(img);
+        
+        // 删除按钮（右上角半透明 X）
+        const delBtn = document.createElement('button');
+        delBtn.className = 'absolute top-1 right-1 bg-black/40 hover:bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center';
+        delBtn.innerHTML = '<i class="fa fa-times text-xs"></i>';
+        delBtn.addEventListener('click', () => {
+          multiImagePaths = multiImagePaths.filter(p => p !== imgPath);
+          // 更新信息与按钮状态
+          if (multiImagePaths.length > 0) {
+            elements.multiImagesInfo.textContent = `已选择 ${multiImagePaths.length} 张图片`;
+            elements.convertMultiPdfBtn.disabled = false;
+            elements.convertMultiPdfBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+          } else {
+            elements.multiImagesInfo.textContent = '尚未选择图片';
+            elements.convertMultiPdfBtn.disabled = true;
+            elements.convertMultiPdfBtn.classList.add('opacity-50', 'cursor-not-allowed');
+          }
+          updatePdfPreview();
+        });
+        item.appendChild(delBtn);
+        
+        elements.pdfPreviewContainer.appendChild(item);
+      });
+    }
+    
+    // 清空所有已选图片
+    function clearMultiImages() {
+      multiImagePaths = [];
+      elements.multiImagesInfo.textContent = '尚未选择图片';
+      elements.multiImagesInfo.classList.remove('hidden');
+      elements.convertMultiPdfBtn.disabled = true;
+      elements.convertMultiPdfBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      updatePdfPreview();
+    }
+    
+    // 新增：选择多次图片，累加到列表
+    async function selectMultiImages() {
+      try {
+        const paths = await window.electronAPI.selectImages();
+        if (Array.isArray(paths) && paths.length > 0) {
+          // 累加并去重，保持已有顺序，新选择排在后面
+          const normalizedNew = paths;
+          const deduped = normalizedNew.filter(p => !multiImagePaths.includes(p));
+          multiImagePaths = multiImagePaths.concat(deduped);
+          elements.multiImagesInfo.textContent = `已选择 ${multiImagePaths.length} 张图片`;
+          elements.multiImagesInfo.classList.remove('hidden');
+          elements.convertMultiPdfBtn.disabled = false;
+          elements.convertMultiPdfBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+          updatePdfPreview();
+        } else {
+          // 未选择新图片时，保留当前列表；若当前为空则提示
+          if (!multiImagePaths || multiImagePaths.length === 0) {
+            elements.multiImagesInfo.textContent = '尚未选择图片';
+            elements.multiImagesInfo.classList.remove('hidden');
+            elements.convertMultiPdfBtn.disabled = true;
+            elements.convertMultiPdfBtn.classList.add('opacity-50', 'cursor-not-allowed');
+          }
+          updatePdfPreview();
+        }
+      } catch (error) {
+        console.error('选择多图出错:', error);
+        elements.multiPdfErrorMessage.textContent = error.message;
+        elements.multiPdfError.classList.remove('hidden');
+      }
+    }
+    
+    // 新增：多图转PDF
+    async function convertMultiToPdf() {
+      if (!multiImagePaths || multiImagePaths.length === 0) return;
+      // 重置状态
+      elements.multiPdfSuccess.classList.add('hidden');
+      elements.multiPdfError.classList.add('hidden');
+      // 显示loading并禁用按钮
+      if (elements.multiPdfLoading) elements.multiPdfLoading.classList.remove('hidden');
+      elements.convertMultiPdfBtn.disabled = true;
+      elements.convertMultiPdfBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      try {
+        const result = await window.electronAPI.imagesToPdf({ imagePaths: multiImagePaths });
+        if (elements.multiPdfLoading) elements.multiPdfLoading.classList.add('hidden');
+        if (result.success) {
+          elements.multiPdfSuccessMessage.textContent = result.message;
+          elements.multiPdfSuccess.classList.remove('hidden');
+        } else {
+          elements.multiPdfErrorMessage.textContent = result.error || result.message;
+          elements.multiPdfError.classList.remove('hidden');
+        }
+      } catch (error) {
+        console.error('多图转PDF出错:', error);
+        if (elements.multiPdfLoading) elements.multiPdfLoading.classList.add('hidden');
+        elements.multiPdfErrorMessage.textContent = error.message;
+        elements.multiPdfError.classList.remove('hidden');
+      } finally {
+        // 根据是否还有图片选择，恢复按钮可用状态
+        if (multiImagePaths && multiImagePaths.length > 0) {
+          elements.convertMultiPdfBtn.disabled = false;
+          elements.convertMultiPdfBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+          elements.convertMultiPdfBtn.disabled = true;
+          elements.convertMultiPdfBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+      }
+    }
+    
     // 切换到指定步骤
     function goToStep(step) {
       // 隐藏所有步骤
@@ -799,6 +1041,13 @@
         elements.piecesContainer.innerHTML = '';
         goToStep(2);
       });
+      
+      // 新增：多图转PDF事件
+      elements.selectMultiImagesBtn.addEventListener('click', selectMultiImages);
+      elements.convertMultiPdfBtn.addEventListener('click', convertMultiToPdf);
+      if (elements.clearMultiImagesBtn) {
+        elements.clearMultiImagesBtn.addEventListener('click', clearMultiImages);
+      }
     }
     
     // 初始化
@@ -808,8 +1057,38 @@
       goToStep(1);
     }
     
-    // 启动应用
-    document.addEventListener('DOMContentLoaded', init);
+    // 切换页面
+    function switchPage(page) {
+      const splitActive = page === 'split';
+      // 左侧菜单样式
+      elements.menuSplitBtn.className = splitActive ? 'w-full bg-primary text-white py-2 rounded-lg font-medium transition-custom' : 'w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg font-medium transition-custom';
+      elements.menuPdfBtn.className = !splitActive ? 'w-full bg-primary text-white py-2 rounded-lg font-medium transition-custom' : 'w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg font-medium transition-custom';
+      // 页面显隐
+      document.getElementById('split-page').classList.toggle('hidden', !splitActive);
+      document.getElementById('pdf-page').classList.toggle('hidden', splitActive);
+    }
+    
+    // 事件监听补充：菜单
+    function setupMenuListeners() {
+      elements.menuSplitBtn.addEventListener('click', () => switchPage('split'));
+      elements.menuPdfBtn.addEventListener('click', () => switchPage('pdf'));
+    }
+    
+    // 扩展DOM引用
+    elements.menuSplitBtn = document.getElementById('menu-split');
+    elements.menuPdfBtn = document.getElementById('menu-pdf');
+    
+    // 初始化扩展
+    function initPages() {
+      setupMenuListeners();
+      switchPage('split');
+    }
+    
+    // 原init中追加
+    document.addEventListener('DOMContentLoaded', () => {
+      init();
+      initPages();
+    });
   </script>
 </body>
 </html>

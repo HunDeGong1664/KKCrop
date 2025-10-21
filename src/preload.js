@@ -7,5 +7,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   selectImage: () => ipcRenderer.invoke('select-image'),
   splitImage: (data) => ipcRenderer.invoke('split-image', data),
   saveAsFiles: (data) => ipcRenderer.invoke('save-as-files', data),
-  saveAsPdf: (data) => ipcRenderer.invoke('save-as-pdf', data)
+  saveAsPdf: (data) => ipcRenderer.invoke('save-as-pdf', data),
+  // 新增：选择多张图片与批量转PDF
+  selectImages: () => ipcRenderer.invoke('select-images'),
+  imagesToPdf: (data) => ipcRenderer.invoke('images-to-pdf', data)
 });
