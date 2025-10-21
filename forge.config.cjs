@@ -1,16 +1,53 @@
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
+const { AutoUnpackNativesPlugin } = require('@electron-forge/plugin-auto-unpack-natives');
+const fs = require('fs');
+const path = require('path');
 
 module.exports = {
   packagerConfig: {
-    asar: true,
+    // 使用 asar，并确保 sharp 及其平台二进制包(@img)解包到 app.asar.unpacked
+    asar: { smartUnpack: true, unpack: '**/node_modules/sharp/**', unpackDir: '**/node_modules/@img/**' },
     // 平台特定的图标配置 - 使用条件配置以避免类型错误
     icon: './assets/icon', // 默认图标路径，会根据平台自动添加相应的扩展名
     // 使用自定义的Info.plist文件以确保图标设置正确
     extendInfoFrom: './custom_info.plist',
-    // 确保图标被正确复制到应用程序包中
+    // 复制关键运行时依赖到构建产物，确保 require() 可解析
     afterCopy: [(buildPath, electronVersion, platform, arch, callback) => {
-      // 这个钩子可以确保图标文件被正确处理
+      try {
+        // 同时复制 sharp 的平台可选依赖（@img），避免运行时报缺失
+        const modulesToCopy = ['sharp', 'detect-libc', 'semver'];
+        const extraDirsToCopy = [{ src: path.resolve(__dirname, 'node_modules', '@img'), dest: path.join(buildPath, 'node_modules', '@img') }];
+        const copyRecursiveSync = (src, dest) => {
+          if (!fs.existsSync(src)) return;
+          if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+          for (const entry of fs.readdirSync(src)) {
+            const srcEntry = path.join(src, entry);
+            const destEntry = path.join(dest, entry);
+            const stat = fs.statSync(srcEntry);
+            if (stat.isDirectory()) {
+              copyRecursiveSync(srcEntry, destEntry);
+            } else {
+              fs.copyFileSync(srcEntry, destEntry);
+            }
+          }
+        };
+        for (const mod of modulesToCopy) {
+          const srcDir = path.resolve(__dirname, 'node_modules', mod);
+          const destDir = path.join(buildPath, 'node_modules', mod);
+          if (fs.existsSync(srcDir)) {
+            copyRecursiveSync(srcDir, destDir);
+          }
+        }
+        // 复制整个 @img 目录（含 sharp-win32-x64）到构建产物
+        for (const dir of extraDirsToCopy) {
+          if (fs.existsSync(dir.src)) {
+            copyRecursiveSync(dir.src, dir.dest);
+          }
+        }
+      } catch (e) {
+        // 忽略复制失败，继续打包流程
+      }
       callback();
     }]
   },
@@ -66,6 +103,8 @@ module.exports = {
         ],
       },
     },
+    // 自动解包原生模块，补充 asar unpack 配置
+    new AutoUnpackNativesPlugin(),
     // Fuses are used to enable/disable various Electron functionality
     // at package time, before code signing the application
     new FusesPlugin({
@@ -75,7 +114,8 @@ module.exports = {
       [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
       [FuseV1Options.EnableNodeCliInspectArguments]: false,
       [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
-      [FuseV1Options.OnlyLoadAppFromAsar]: true,
+      // 允许从 app.asar.unpacked 加载原生模块（如 sharp）
+      [FuseV1Options.OnlyLoadAppFromAsar]: false,
     }),
   ],
 };

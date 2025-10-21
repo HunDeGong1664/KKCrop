@@ -174,10 +174,12 @@ ipcMain.handle('select-images', async () => {
 ipcMain.handle('split-image', async (event, { imagePath, rows, cols }) => {
   try {
     // 导入sharp库进行图像处理
-    const sharp = await import('sharp');
+    const moduleNs = await import('node:module');
+    const require = moduleNs.createRequire(import.meta.url);
+    const sharp = require('sharp');
     
     // 获取原始图像的信息
-    const image = sharp.default(imagePath);
+    const image = sharp(imagePath);
     const metadata = await image.metadata();
     const { width, height } = metadata;
     
@@ -303,12 +305,11 @@ ipcMain.handle('save-as-pdf', async (event, data) => {
     const pathModule = await import('node:path');
     const electron = await import('electron');
     const fsModule = await import('node:fs');
-    const pdfLib = await import('pdf-lib');
+    const { PDFDocument } = await import('pdf-lib');
 
     const path = pathModule.default;
     const { dialog } = electron;
     const fs = fsModule.default;
-    const { PDFDocument } = pdfLib.default;
     
     // 显示保存对话框，让用户选择保存位置和文件名
     const result = await dialog.showSaveDialog({
@@ -419,12 +420,11 @@ ipcMain.handle('images-to-pdf', async (event, data) => {
     const pathModule = await import('node:path');
     const electron = await import('electron');
     const fsModule = await import('node:fs');
-    const pdfLib = await import('pdf-lib');
+    const { PDFDocument } = await import('pdf-lib');
 
     const path = pathModule.default;
     const { dialog } = electron;
     const fs = fsModule.default;
-    const { PDFDocument } = pdfLib.default;
 
     if (!imagePaths || imagePaths.length === 0) {
       return { success: false, message: '未选择图片' };
@@ -457,8 +457,10 @@ ipcMain.handle('images-to-pdf', async (event, data) => {
             try {
               image = await pdfDoc.embedJpg(imgBytes);
             } catch (e2) {
-              const sharp = await import('sharp');
-              const pngBuffer = await sharp.default(imagePath).png().toBuffer();
+              const moduleNs = await import('node:module');
+              const require = moduleNs.createRequire(import.meta.url);
+              const sharp = require('sharp');
+              const pngBuffer = await sharp(imagePath).png().toBuffer();
               image = await pdfDoc.embedPng(pngBuffer);
             }
           }

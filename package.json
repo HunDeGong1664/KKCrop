@@ -1,7 +1,7 @@
 {
   "name": "kkcrop",
   "productName": "kkcrop",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "KKCrop图片处理工具",
   "main": ".vite/build/main.js",
   "scripts": {

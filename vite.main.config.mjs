@@ -5,8 +5,8 @@ import { resolve } from 'path';
 export default defineConfig({
   build: {
     rollupOptions: {
-      // 配置rollup处理外部依赖
-      external: ['sharp', 'pdf-lib'], // 将sharp和pdf-lib都标记为外部依赖，避免打包进bundle
+      // 仅将 sharp 标记为外部依赖，pdf-lib 打进主进程 bundle
+      external: ['sharp'],
       plugins: []
     }
   }
